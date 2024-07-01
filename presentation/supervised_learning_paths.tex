@@ -1,0 +1,74 @@
+\begin{figure}[ht]
+	\begin{minipage}{.45\linewidth}
+	  \centering
+	\resizebox{1.26\textwidth}{!}{%
+\begin{tikzpicture}
+	\hspace{-1.5cm}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north west},
+			xlabel=steps,
+			ylabel=|paths|,
+			%ylabel shift = 0.1 pt,
+			scaled y ticks = false,
+			grid=major,
+			xtick={0, 50, 100, 150, 200},
+			xticklabels={0, 500, 1000, 1500, 2000},
+			ytick={0, 20000, 40000, 60000, 80000},
+			yticklabels={0, 20000, 40000, 60000, 80000},
+			xmin=0,
+			xmax=200,
+			ymin=0,
+			ymax=80000,
+			width=8cm,
+			height=8cm]
+		%\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_400_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		%\addlegendentry{400 Steps}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_semeval_300_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{300 Steps}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_semeval_200_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{200 Steps}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_semeval_100_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{100 Steps}
+		\addplot [mark=none, tab20darkgreen, very thick]table [x=Step, y=r_semeval_no_super_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{0 Steps}
+	\end{axis}
+\end{tikzpicture}}
+	\end{minipage}
+	%\hspace*{0.7cm}
+	\begin{minipage}{.45\linewidth}
+	  \centering
+	\resizebox{1.2\textwidth}{!}{%
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north east},
+			xlabel=steps,
+			ylabel=entropy,
+			grid=major,
+			xtick={0, 50, 100, 150, 200},
+			xticklabels={0, 500, 1000, 1500, 2000},
+			ytick={0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5},
+			yticklabels={0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5},
+			xmin=0,
+			xmax=200,
+			ymin=0.0,
+			ymax=3.5,
+			width=8cm,
+			height=8cm]
+		%\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_400_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		%\addlegendentry{400 Steps}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_semeval_300_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{300 Steps}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_semeval_200_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{200 Steps}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_semeval_100_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{100 Steps}
+		\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_no_super_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{0 Steps}
+	\end{axis}
+\end{tikzpicture}}
+	\end{minipage}
+  \end{figure}

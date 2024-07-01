@@ -1,0 +1,1092 @@
+\documentclass[table]{beamer}
+
+% Alternative to \usetheme{claw}
+\usepackage{template/beamercolorthemeclaw}
+\usepackage{template/beamerfontthemeclaw}
+\usepackage{template/beamerinnerthemeclaw}
+\usepackage{template/beamerouterthemeclaw}
+
+\usepackage{standalone}
+\usepackage{booktabs}
+%\usepackage{hhline}
+\usepackage{lmodern}
+
+
+\definecolor{tab20darkblue}{HTML}{4e79a7}
+\definecolor{tab20darkgreen}{HTML}{59a14f}
+\definecolor{tab20darkred}{HTML}{e15759}
+\definecolor{tab20darkorange}{HTML}{f28e2b}
+\definecolor{tab20darkturquoise}{HTML}{499894}
+\definecolor{tab20darkgray}{HTML}{79706e}
+\definecolor{tab20darkbrown}{HTML}{9d7660}
+\definecolor{tab20darkpurple}{HTML}{b07aa1}
+\definecolor{tab20darkpink}{HTML}{e377c2}
+\definecolor{tab20lightgreen}{HTML}{8cd17d}
+\definecolor{tab20lightblue}{HTML}{a0cbd8}
+\definecolor{tab20lightorange}{HTML}{ffbb78}
+\definecolor{tab20lightred}{HTML}{ff9896}
+\definecolor{tab20lightpurple}{HTML}{c5b0d5}
+\definecolor{tab20lightbrown}{HTML}{c49c94}
+\definecolor{tab20lightpink}{HTML}{f7b6d2}
+\definecolor{tab20lightgray}{HTML}{c7c7c7}
+\definecolor{tab20lightturquoise}{HTML}{9edae5}
+\definecolor{tab20lightyellow}{HTML}{dbdb8d}
+\definecolor{tab20darkyellow}{HTML}{bcbd22}
+
+\definecolor{brass}{HTML}{E1C16E}
+
+
+
+\input{packages.tex}
+
+% Figures.
+\usepackage{tikz-qtree}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usetikzlibrary{shapes, positioning, arrows}
+
+
+
+% 1st used for slides footer, 2nd for title slide & PDF metadata
+\title[CausalQA]{Answering Causal Questions With Reinforcement Learning}
+% Used for title slide & PDF metadata
+\subtitle{}
+
+%\date{April 27, 2022}
+% Date with conference name
+\date[\today]
+
+% One author
+% 1st used for slides footer, 2nd for title slide & PDF metadata
+\author[Lukas Blübaum]{Lukas Blübaum \\ \vspace{0.5cm}Supervisor: Dr. Stefan Heindorf}
+
+% 1st used for slides footer, 2nd for title slide
+%\institute[DICE]{DICE Group\\Paderborn University}
+% Institute with logo
+\institute[DICE]{\includegraphics[height=0.6cm]{DICE}\\Data Science Group\\Paderborn University}
+
+% Two authors from different institutes
+% Source: https://www.overleaf.com/learn/latex/Beamer#The_title_page
+%\author[\underline{Wilke}, Ngonga]{\underline{Adrian~Wilke}\inst{1} \and Axel~Ngonga\inst{2}}
+%\institute[]
+%{
+%	\inst{1}%
+%	DICE Group\\
+%	Department of Computer Science\\
+%	Paderborn University, Germany
+%	\and
+%	\inst{2}%
+%	DICE Group\\
+%	Department of Computer Science\\
+%	Paderborn University, Germany
+%}
+
+% One logo on title page
+%\titlegraphic{\includegraphics[height=1cm]{DICE}}
+
+% Two logos on title page
+%\titlegraphic{
+%	\includegraphics[height=1cm]{UPB}%
+%	\hspace*{2cm}~%
+%	\includegraphics[height=1cm]{DICE}%
+%}
+
+% Siavoosh Payandeh Azad Jan. 2019
+\RequirePackage{etoolbox}
+\RequirePackage{pgf} % for calculating the values for gradient
+\RequirePackage{xcolor} % enables the use of cellcolor make sure you have [table] option in the document class 
+% Color set related!
+%\definecolor{high}{HTML}{ef3b2c}  % the color for the highest number in your data set
+%\definecolor{high}{HTML}{b9f3be}
+\definecolor{high}{HTML}{8cd17d}
+%\definecolor{low}{HTML}{ef3b2c}
+%\definecolor{low}{HTML}{ff9896}
+%\definecolor{low}{HTML}{f79e4c}
+%\definecolor{low}{HTML}{fbd769}
+\definecolor{low}{HTML}{faf2a7}
+%\definecolor{low}{HTML}{fff7bc}  % the color for the lowest number in your data set
+\newcommand*{\opacity}{90}% here you can change the opacity of the background color!
+%======================================
+% Data set related!
+\newcommand*{\minval}{0.38}% define the minimum value on your data set
+\newcommand*{\maxval}{1.0}% define the maximum value in your data set!
+%======================================
+% gradient function!
+\newcommand{\g}[1]{%
+    % The values are calculated linearly between \minval and \maxval
+    \ifdimcomp{#1pt}{>}{\maxval pt}{#1}{%
+    \ifdimcomp{#1pt}{<}{\minval pt}{#1}{%
+         \pgfmathparse{int(round(100*(#1/(\maxval-\minval))-(\minval*(100/(\maxval-\minval)))))}%
+        \xdef\tempa{\pgfmathresult}%
+        \cellcolor{high!\tempa!low!\opacity}%
+    }}%
+ }%
+%======================================
+% gradient function single cell! 
+\newcommand{\gradientcell}[6]{
+    % The values are calculated linearly between \minval and \maxval
+    \ifdimcomp{#1pt}{>}{#3 pt}{#1}{
+    \ifdimcomp{#1pt}{<}{#2 pt}{#1}{
+         \pgfmathparse{int(round(100*(#1/(#3-#2))-(\minval*(100/(#3-#2)))))}
+        \xdef\tempa{\pgfmathresult}
+        \cellcolor{#5!\tempa!#4!#6} #1
+    }}
+ }
+
+\pdfsuppresswarningpagegroup=1
+
+\begin{document}
+
+% Title page without background
+%{\usebackgroundtemplate{}
+%\frame[plain]{\titlepage}}
+
+% Title page with background
+{\usebackgroundtemplate{\includegraphics[width=\paperwidth]{background-title-upb}
+% German UPB logo
+%\usebackgroundtemplate{\includegraphics[width=\paperwidth]{background-title-upb-german}
+}
+\frame[plain]{\titlepage}}
+
+% Begin counting at second frame
+\addtocounter{framenumber}{-1}
+
+
+\begin{frame}{Causal Question Answering}
+  \begin{columns}[T]
+    \column{0.62\textwidth}
+  \begin{itemize}
+    \item<1-> Causal Questions
+    \begin{itemize}
+      \item Determine relationships between causes and effects
+      \item E.g. understand what effects a cause could have in the future
+    \end{itemize}
+    \item<2-> Use Cases
+    \begin{itemize}
+      \item Search engines
+      \item Virtual assistants like Alexa
+      \item Automated decision-making
+    \end{itemize}
+    \item<3-> Limitations of prior approaches
+    \begin{itemize}
+      \item Often \emph{not explainable}
+      \item \emph{Lack of large-scale datasets} of causal relations of high quality
+    \end{itemize}
+  \end{itemize}
+  \column{0.38\textwidth}
+  
+  \scriptsize
+  \emph{\textbf{Binary Causal Questions}}\\
+  \emph{Does pneumonia cause anemia?}\\
+  \vspace{0.2cm}
+  \textbf{Open-Ended Questions}\\
+  What can cause anemia?\\
+  \vspace{0.2cm}
+  \textbf{Comprehension Questions}\\
+  How does pneumonia cause anemia?
+  %\textbf{Open-Ended Questions}\\
+  %What can cause anemia?\\\\
+  %\textbf{More complex questions}\\
+  %How does pneumonia cause anemia?
+  %\begin{textblock*}{5cm}(9cm,1.8cm) 
+  %\resizebox{0.7\textwidth}{!}{
+  %\begin{tikzpicture}
+    %\node[object, xshift=2cm,yshift=2cm, anchor=north east] (P1) {organ failure};
+    %\node[object,xshift=2cm,yshift=2cm, anchor=north east, fill=tab20darkred!60,label={0: \huge $\mathbf{\downarrow}$}] (P2) {climate change};
+    %\node[object, right= 0.5cm of P2] (P3) {ards};
+    
+   % \node (T1) {\textbf{Binary Causal Questions}};
+   % \node[below = 0.3cm of T1] (T2) {Does pneumonia cause anemia?};
+
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkblue!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+  
+  
+  \vspace{-0.5cm}
+  \begin{textblock*}{5cm}(8cm,5.0cm) 
+    \resizebox{0.7\textwidth}{!}{%
+  \hspace{0.0cm}
+  \begin{tikzpicture}
+    \node[object, fill=white] (P1) {sepsis};
+    \node[object, right= 0.5cm of P1] (P2) {anemia};
+    \node[object, right= 0.5cm of P2, fill=white] (P3) {ards};
+    
+    \node[person, above=of P2] (T1) {pneumonia};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+
+  \end{tikzpicture}}
+  \end{textblock*}
+  %\end{tikzpicture}}
+  %\end{textblock*}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Causal Question Answering}
+  \begin{itemize}
+    \item<1-> Solution
+    \begin{itemize}
+      \item Perform \emph{walks on a knowledge graph}
+      \item Formulated as a sequential decision problem\\via reinforcement learning
+    \end{itemize}
+    \item<2-> Advantages
+    \begin{itemize}
+      \item Answers are \emph{explainable}\\$\Rightarrow$ Can follow the reasoning chain
+      \item Can answer \emph{binary and open-ended questions}
+      %\item Performs better than walks learned\\via supervised learning
+    \end{itemize}
+    \item<3-> Contributions
+    \begin{itemize}
+      \item Approach to answer \emph{binary causal questions}\\via reinforcement learning
+      \item Introduce an Actor-Critic (A2C) based agent with\\generalized advantage estimation (GAE)
+      \item Supervised learning and reward shaping to deal with\\large action spaces and sparse rewards
+    \end{itemize}
+  \end{itemize}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+
+  \begin{textblock*}{5cm}(9cm,1.8cm) 
+  \resizebox{0.7\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    
+    \node[object, xshift=2cm,yshift=2.2cm, anchor=north east] (P1) {fatigue};
+    \node[object, right= 0.7cm of P1,fill=tab20darkblue!60] (P2) {sepsis};
+    \node[object, right= 0.7cm of P2] (P3) {ards};
+    
+    \node[person, above=0.7cm of P2,fill=tab20darkblue!60] (T1) {pneumonia};
+    \node[person, above=0.7cm of T1] (T2) {bacteria};
+    \node[person, below=0.7cm of P3] (T3) {death};
+    \node[person, below=0.7cm of T3] (P8) {grief};
+    \node[person, below=0.7cm of P2,fill=tab20darkblue!60] (T4) {kidney failure};
+    \node[person, below=0.7cm of T4,fill=tab20darkblue!60] (P7) {anemia};
+
+    \node[above=0.7cm of T2] (T5) {\textbf{Does pneumonia cause anemia?}};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+    \draw[arrow, line width=1.2pt] (T2) -- (T1);
+    \draw[arrow, line width=1.2pt] (P3) -- (T3);
+    \draw[arrow, line width=1.2pt] (P2) -- (T4);
+    \draw[arrow, line width=1.2pt] (T4) -- (P7);
+    \draw[arrow, line width=1.2pt] (T3) -- (P8);
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{frame}
+
+
+\begin{frame}{CauseNet}{Large-Scale Causal Knowledge Graph}
+  \begin{itemize}
+	  \item $\mathcal{K}=(\mathcal{E}, \mathcal{R})$: entities $\mathcal{E}$, relations $\mathcal{R}$
+	  \item $\mathcal{R} = \{mayCause\}$:\\$\Rightarrow$ Claimed causal relations
+	  %\item Extracted via linguistic pattern from\\web sources like Wikipedia and ClueWeb12
+    \item Meta-information like the \emph{original sentence} \\and the \emph{URL} for each relation
+	  \item Two configurations: \emph{CauseNet-Precision}\\and CauseNet-Full~{\scriptsize\cite{Heindorf2020Causenet}}
+\end{itemize}
+
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+  
+  
+
+  \begin{textblock*}{5cm}(8.4cm,1.5cm) 
+  \resizebox{0.8\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    \node[object, xshift=2cm,yshift=2cm, anchor=north east] (P1) {sepsis};
+    \node[object, right= 0.5cm of P1] (P2) {anemia};
+    \node[object, right= 0.5cm of P2] (P3) {ards};
+    
+    \node[person, above=0.7cm of P2] (T1) {pneumonia};
+    \node[person, above=0.7cm of T1] (T2) {bacteria};
+    \node[person, below=0.7cm of P3] (T3) {death};
+    \node[person, below=0.7cm of P2] (T4) {fatigue};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+    \draw[arrow, line width=1.2pt] (T2) -- (T1);
+    \draw[arrow, line width=1.2pt] (P3) -- (T3);
+    \draw[arrow, line width=1.2pt] (P2) -- (T4);
+
+  \end{tikzpicture}}
+\end{textblock*}
+
+	\begin{exampleblock}<2->{Causal Questions}
+	\begin{itemize}
+	  \item Does \underline{pneumonia} cause \underline{fatigue}?
+	  \item Is \underline{sepsis} caused by \underline{pneumonia}?
+	\end{itemize}
+\end{exampleblock}
+
+\end{frame}
+
+\begin{frame}{Task and Problem Definition}
+	\begin{block}{Causal Question Answering on Knowledge Graph $\mathcal{K}$}
+    \begin{itemize}
+	\item Input:
+	\begin{itemize}
+	  \item $\mathcal{K}=(\mathcal{E}, \mathcal{R})$ with $\mathcal{R} = \{cause\}$
+    \item Question $q$ with exactly \emph{one cause} $e_c$ and \emph{one effect} $e_e$\\
+    \textcolor{gray}{Does pneumonia ($= e_c$) cause anemia ($ = e_e$)?}
+	\end{itemize}
+	\item<2-> Output:
+	\begin{itemize}
+	    \item Path: $(e_c, e_1, \dots, e_e)$ with $e_c, e_i, e_e \in \mathcal{E}$
+      \item If such a path can be found answer ``yes'' and ``no'' otherwise
+    \end{itemize}
+	\item<3-> Challenges:
+	\begin{itemize}
+	    \item Only \emph{one relation type} contrary to prior approaches\\$\Rightarrow$ Large action space
+	    \item CauseNet-Precision has 80,223 entities
+    \end{itemize}
+  \end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Reinforcement Learning}
+\begin{itemize}
+  \item Policy gradient methods with policy network $\pi_{\theta} (a_t | s_t)$:
+  \begin{equation*}
+    \nabla_{\theta} J (\theta) = \mathbb{E}_{\pi_\theta} \left[ \sum_{t=0}^T \nabla_\theta \, \log(\pi_\theta (a_t | s_t)) \Psi_t \right] 
+    \label{eq:polupdate}
+  \end{equation*}
+  \item<2-> Possible forms for $\Psi_t$~{\scriptsize\cite{Schulman2016GAE}}:
+    \begin{equation*}
+    R_t = \sum_{i=0}^{T-t} \gamma^{i} \, r_{t+i} \ \ \ \ \ \ \ \ \ \ \ \ \
+      \mathcal{A}_t^\psi = R_t(\lambda) - V_\psi(s_t)
+    \end{equation*}
+  \item<3-> \emph{Monte-Carlo return} $R_t$ unbiased but high variance\\$\Rightarrow$ REINFORCE
+  \item<3-> \emph{Advantage} $\mathcal{A}_t^{\psi}$ introduces value network $V_{\psi}(s_t)$ to \emph{reduce variance}\\$\Rightarrow$ Advantage Actor-Critic (A2C)~{\scriptsize\cite{Mnih2016A2C}}
+  \item<3-> Using the $\lambda$-return $R_t(\lambda)$ in the advantage yields the generalized advantage estimation (GAE)~{\scriptsize\cite{Schulman2016GAE}}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Environment}{Agent, States, Actions}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+  \begin{itemize}
+    \item Agent
+    \begin{itemize}
+      \item $\pi_\theta(a_t | s_t)$: policy network\\
+       $\Rightarrow$ Distribution over actions
+      \item $V_\psi(s_t)$: value network \\
+      $\Rightarrow$ Reward from state $s_t$ onwards
+    \end{itemize}
+    \item<2-> States
+    \begin{itemize}
+      \item $s = (\mathbf{q}, e_t, \mathbf{e_t}, \mathbf{h_t}, e_e)$
+      \item Question Embedding $\mathbf{q}$
+      \item Current entity $e_t$, target entity $e_e$
+      \item History $\mathbf{h_t}$ (LSTM hidden states)
+    \end{itemize}
+    \item<3-> Actions
+    \begin{itemize}
+      \item All neighboring entities of $e_t$:\\
+      $A(s_t) = \{e | (e_t, r, e) \in \mathcal{K}\}$
+    \end{itemize}
+  \end{itemize}
+  \column{0.4\textwidth}
+  %\vspace{-1.0cm}
+  \begin{figure}
+    \centering
+  \hspace*{-0.5cm}
+  \includegraphics[clip, trim=7cm 19cm 5cm 2cm, width=1.3\textwidth]{rl.pdf}
+  \end{figure}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkblue!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+  
+  
+  \vspace{-0.5cm}
+    \resizebox{1.1\textwidth}{!}{%
+  \hspace{0.0cm}
+  \begin{tikzpicture}
+    \node[object] (P1) {sepsis};
+    \node[object, right= 0.5cm of P1, label={-90:$\mathbf{a_t = e_{t+1}}$}] (P2) {anemia};
+    \node[object, right= 0.5cm of P2] (P3) {ards};
+    \node[right= 0.1cm of P3] (P4) {\large $\biggl\} \, \, A(s_t)$};
+    
+    \node[person, above=of P2, label={90:$\mathbf{e_t}$}] (T1) {pneumonia};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+
+  \end{tikzpicture}}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Environment}{Actions, Transitions, Rewards}
+  \begin{columns}[T]
+    \column{0.60\textwidth}
+  \begin{itemize}
+    \item Actions
+    \begin{itemize}
+      \item \textit{STAY} action: $A(s_t) = A(s_t) \cup \{STAY\}$
+      \item Including \emph{inverse edges}
+      %\item Embeddings: $\mathbf{a_t} = [\mathbf{s};\mathbf{a_t}]$ with\\original sentence $s$
+    \end{itemize}
+    \item<2-> Transitions
+    \begin{itemize}
+      \item $\delta(s_t, a_t) = s_{t+1}$ where $a_t = e_{t+1}$
+      \item \emph{Deterministic} and entirely defined\\by the graph
+    \end{itemize}
+    \item<3-> Rewards
+    \begin{itemize}
+      \item $\mathcal{R}(s_{T-1}) = r_t$ with $r_t = 1$ if \emph{$e_{T-1} = e_e$} and $r_t = 0$ otherwise
+      %$s_{T-1} = (\mathbf{q}, e_{T-1}, \mathbf{e_{T-1}}, \mathbf{h_{T-1}}, e_e)$ with 
+      \item $0$ at all other time steps\\
+      $\Rightarrow$ \emph{sparse reward}
+    \end{itemize}
+  \end{itemize}
+  \column{0.4\textwidth}
+  
+  %\vspace{-0.2cm}
+  \begin{figure}
+    \centering
+  \hspace*{-0.5cm}
+  \includegraphics[clip, trim=7cm 19cm 5cm 2cm, width=1.3\textwidth]{rl.pdf}
+  \end{figure}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkblue!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+  
+  
+  \vspace{-0.5cm}
+    \resizebox{1.1\textwidth}{!}{%
+  \hspace{0.0cm}
+  \begin{tikzpicture}
+    \node[object] (P1) {sepsis};
+    \node[object, right= 0.5cm of P1, label={-90:$\mathbf{a_t = e_{t+1}}$}] (P2) {anemia};
+    \node[object, right= 0.5cm of P2] (P3) {ards};
+    \node[right= 0.1cm of P3] (P4) {\large $\biggl\} \, \, A(s_t)$};
+    
+    \node[person, above=of P2, label={90:$\mathbf{e_t}$}] (T1) {pneumonia};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+
+  \end{tikzpicture}}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Agent}{Training}
+
+\begin{itemize}
+  \item Network Architecture
+  \begin{itemize}
+    \item LSTM to include the \emph{path history}
+    \item Stack two feedforward networks on top\\$\Rightarrow$ For policy network and value network
+  \end{itemize}
+
+  \item<2-> Preprocessing of questions
+  \begin{itemize}
+    \item \emph{No negative information} in CauseNet\\$\Rightarrow$ Only use \emph{positive questions}
+    \item Find $e_c$ and $e_e$ in graph via exact string matching
+  \end{itemize}
+  \item<3-> Sample rollouts
+  \begin{itemize}
+    \item Starting at $e_c$ sample \emph{rollouts of length $T$}
+    \item If $e_e$ found, the agent should use the \textit{STAY} action
+  \end{itemize}
+
+  \begin{equation*}
+    \uncover<3->{\text{rollout} = (} \uncover<4->{(s_0, a_0, r_0),} \uncover<5->{(s_1, a_1, r_1),} \uncover<6->{(s_2, a_2, r_2))}
+  \end{equation*}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+
+  \begin{textblock*}{5cm}(9.3cm,2.8cm) 
+  \resizebox{0.65\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    %\node[object, xshift=2cm,yshift=2cm, anchor=north east] (P1) {organ failure};
+    \uncover<5->{\node[object,xshift=2cm,yshift=2cm, anchor=north east, label={0:$\mathbf{s_2}, \mathbf{r_1 = 0}$}] (P2) {kidney failure};}
+    %\node[object, right= 0.5cm of P2] (P3) {ards};
+    
+    \uncover<4->{\node[person, above=0.7cm of P2, label={0:$\mathbf{s_1}, \mathbf{r_0 = 0}$}] (T1) {sepsis};}
+    \uncover<3->{\node[person, above=0.7cm of T1, label={0:$\mathbf{s_0}$}] (T2) {pneumonia};}
+    %\node[person, below=0.7cm of P3] (T3) {death};
+    \uncover<6->{\node[person, below=0.7cm of P2, label={0:$\mathbf{s_3}, \mathbf{r_2 = ?}$}] (T4) {anemia};}
+
+    %\draw[->] (T1) -- (P1);
+    \uncover<5->{\draw[arrow, line width=1.2pt] (T1) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_1}$} (P2);}
+    %\draw[->] (T1) -- (P3);
+    \uncover<4->{\draw[arrow, line width=1.2pt] (T2) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_0}$} (T1);}
+    %\draw[->] (P3) -- (T3);
+    \uncover<6->{\draw[arrow, line width=1.2pt] (P2) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_2}$} (T4);}
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}{Agent}{Update Rules}
+
+\begin{itemize}
+\item Using Synchronous Advantage Actor-Critic (A2C) with GAE
+\item \emph{Actor:} policy network $\pi_{\theta}(a_t | s_t)$:
+\begin{equation*}
+  \nabla_{\theta} J(\theta) = - \frac{1}{B} \sum_{i}^{B} \sum_{t=0}^{T-2} \nabla_{\theta} \log(\pi_{\theta} (a_t | s_t)) \, \mathcal{A}_{t}^{\psi} + \beta H_{\pi_{\theta}}
+\end{equation*}
+  \begin{itemize}
+  \item $B$: batch size, $T$: episode length, $\mathcal{A}_t^{\psi}$: GAE
+  \item $H_{\pi_{\theta}}$: entropy regularization $\Rightarrow$ \emph{exploration vs. exploitation}
+  \end{itemize}
+\item<2-> \emph{Critic:} value network $V_{\psi}(s_t)$:
+  \begin{equation*}
+    \nabla_{\psi} J(\psi)= \frac{1}{B (T-1)} \sum_{i}^{B} \sum_{t=0}^{T-2} \nabla_{\psi} (R_t(\lambda) - V_{\psi}(s_t))^2
+  \end{equation*}
+  \begin{itemize}
+  \item MSE between $\lambda$-return and value network predictions $V_{\psi}(s_t)$
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Agent}{Inference}
+
+\begin{block}{Inference Time}
+  \begin{itemize}
+  \item Receive positive and negative questions
+  \item Answer ``yes'' if a path was found and ``no'' otherwise
+  \end{itemize}
+\end{block}
+
+\vspace{-0.2cm}
+\begin{itemize}
+  \item<2-> Greedy decoding:
+  \begin{itemize}
+    \item Choose action: $arg\,max_{a_t \in \mathcal{A}(s_t)} \ \pi_{\theta}(a_t | s_t)$
+    \item \emph{Myopic} behavior
+  \end{itemize}
+  \item<3-> Beam search:
+  \begin{itemize}
+    \item Always keep set of best partial solutions (paths)
+    \item Paths \emph{ranked by their probability}
+    \item Probability of path $p = (e_c,e_1, \dots, e_{T-1})$ with $e_t = a_{t-1}$:
+    \begin{equation*}
+  \mathbb{P}(p) = \prod_{t=0}^{T-2} \pi_{\theta}(a_t |s_t)
+      \end{equation*}
+  \end{itemize}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkblue!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+  
+  
+  \vspace{-0.5cm}
+  \begin{textblock*}{5cm}(9cm,4.0cm) 
+    \resizebox{0.65\textwidth}{!}{%
+  \hspace{0.0cm}
+  \begin{tikzpicture}
+    \uncover<2->{\node[object, fill=white] (P1) {sepsis};}
+    \uncover<2->{\node[object, right= 0.5cm of P1] (P2) {anemia};}
+    \uncover<2->{\node[object, right= 0.5cm of P2, fill=white] (P3) {ards};}
+    
+    \uncover<2->{\node[person, above=of P2] (T1) {pneumonia};}
+
+    \uncover<2->{\draw[arrow, line width=1.2pt] (T1) to node[left=0.04cm, pos=0.5]  {$0.2$} (P1);}
+    \uncover<2->{\draw[arrow, line width=1.2pt] (T1) to node[right=0.00cm, pos=0.5]  {$\mathbf{0.6}$} (P2);}
+    \uncover<2->{\draw[arrow, line width=1.2pt] (T1) to node[right=0.04cm, pos=0.5]  {$0.2$} (P3);}
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Walkthrough}{Beam Width = 2}
+\input{graph_example.tex}
+\end{frame}
+
+\begin{frame}{Bootstrapping with Supervised Learning}
+
+\begin{itemize}
+  \item Problem: large action space + sparse rewards
+  \begin{itemize}
+    \item \emph{Slow convergence}
+    \item Guidance in the beginning
+  \end{itemize}
+  \item<2-> Generating expert demonstrations~{\scriptsize\cite{Xiong2017DeePpath}}:
+  \begin{itemize}
+    \item Paths from a \emph{breadth-first search (BFS)}
+    \item Preprocessing step for each question $q$\\\textcolor{gray}{Find path between $e_c$ and $e_e$}
+  \end{itemize}
+  \item<3-> Supervised gradient update:
+  \begin{itemize}
+    \item \emph{$r_t = 1$ at each time step}
+    \item Batch size $B$, episode length $T$
+    \item Entropy regularization $H_{\pi_{\theta}}$
+  \end{itemize}
+
+    \begin{equation*}
+      \nabla_{\theta} J(\theta) = - \frac{1}{B} \sum_{i}^{B} \sum_{t=0}^{T-2} \nabla_{\theta} \log(\pi_{\theta} (a_t | s_t)) \, r_t + \beta H_{\pi_\theta}
+    \end{equation*}
+
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+
+  \begin{textblock*}{5cm}(9cm,1.8cm) 
+  \resizebox{0.65\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    %\node[object, xshift=2cm,yshift=2cm, anchor=north east] (P1) {organ failure};
+    \uncover<2->{\node[object,xshift=2cm,yshift=2cm, anchor=north east, label={0:$\mathbf{s_2}, \mathbf{r_1 = 1}$}] (P2) {kidney failure};}
+    %\node[object, right= 0.5cm of P2] (P3) {ards};
+    
+    \uncover<2->{\node[person, above=0.7cm of P2, label={0:$\mathbf{s_1}, \mathbf{r_0 = 1}$}] (T1) {sepsis};}
+    \uncover<2->{\node[person, above=0.7cm of T1, label={0:$\mathbf{s_0}$}] (T2) {pneumonia};}
+    %\node[person, below=0.7cm of P3] (T3) {death};
+    \uncover<2->{\node[person, below=0.7cm of P2, label={0:$\mathbf{s_3}, \mathbf{r_2 = 1}$}] (T4) {anemia};}
+
+    %\draw[->] (T1) -- (P1);
+    \uncover<2->{\draw[arrow, line width=1.2pt] (T1) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_1}$} (P2);}
+    %\draw[->] (T1) -- (P3);
+    \uncover<2->{\draw[arrow, line width=1.2pt] (T2) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_0}$} (T1);}
+    %\draw[->] (P3) -- (T3);
+    \uncover<2->{\draw[arrow, line width=1.2pt] (P2) to node[right=0.04cm, pos=0.5]  {$\mathbf{a_2}$} (T4);}
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Reward Shaping}
+
+\begin{itemize}
+    \item Problem: sparse rewards
+    \begin{itemize}
+      \item Agent only receives a reward if $e_{T-1} = e_e$
+      \item Rarely finds correct paths at the start
+    \end{itemize}
+    \item<2-> Introduce \emph{auxiliary reward}:
+    \begin{itemize}
+      \item Score \emph{last node} according to its \emph{relevance}\\to the question~{\scriptsize\cite{Yasunaga2021QAGNN}}
+    \end{itemize}
+    \item<3-> Updated reward:
+    \begin{equation*}
+      \mathcal{R}'(s_{T-1}) =
+        \begin{cases}
+          \mathcal{R}(s_{T-1}), & \mathcal{R}(s_{T-1}) = 1 \\
+          Score(q, e_{T-1}) \cdot \omega, & \text{otherwise}
+        \end{cases}
+    \end{equation*}
+    \item<3-> Where $Score$ is defined as:
+    \begin{equation*}
+      Score(q, e_{T-1}) = LM_{head}(LM_{enc}([q;e_{T-1}]))
+    \end{equation*}
+    \vspace{-0.5cm}
+    \begin{itemize}
+    \item $LM_{head}$: feedforward network, $LM_{enc}$: language model encoder
+    \end{itemize}
+\end{itemize}
+
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+  \tikzstyle{arrow} = [->, thick,>=stealth']
+  \tikzstyle{box}=[minimum height=0.8cm, minimum width = 6cm, inner sep=4pt, rounded corners]
+
+  \begin{textblock*}{5cm}(9cm,1.8cm) 
+  \resizebox{0.7\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    %\node[object, xshift=2cm,yshift=2cm, anchor=north east] (P1) {organ failure};
+    \uncover<2->{\node[object,xshift=2cm,yshift=2cm, anchor=north east, fill=tab20darkred!60,label={0: \huge $\mathbf{\downarrow}$}] (P2) {climate change};}
+    %\node[object, right= 0.5cm of P2] (P3) {ards};
+    
+    \uncover<2->{\node[person, above=0.7cm of P2, label={0: \huge $\mathbf{\uparrow}$}] (T1) {sepsis};}
+    \uncover<2->{\node[above=0.7cm of T1] (T2) {\textbf{Does pneumonia cause anemia?}};}
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{frame}
+
+\begin{frame}{Evaluation}
+
+\input{table-evaluation-results}
+
+\end{frame}
+
+
+\begin{frame}{Ablation Study}
+
+\input{table-ablation-study}
+
+%\begin{itemize}
+  %\item Beam search most important
+  %\item Beam search most important
+%\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Effects of Supervised Learning}{Accuracy}
+\input{supervised_learning_accuracy.tex}
+\end{frame}
+
+\begin{frame}{Effects of Supervised Learning}{Number of Explored Paths + Entropy of Policy Network}
+\input{supervised_learning_paths.tex}
+\end{frame}
+
+\begin{frame}{Conclusion}
+\begin{itemize}
+    \item Summary
+    \begin{itemize}
+        \item Introduced an Actor-Critic (A2C) based agent\\to answer causal questions
+        \item Extended with supervised learning and reward shaping
+    \end{itemize}
+    \item<2-> Conclusion
+    \begin{itemize}
+        \item Supervised learning provides an effective foundation
+        \item Effectively \emph{prunes the search space by around 99\%}
+        \item Paths can be used as \emph{explanations}\\$\Rightarrow$ Use meta-information to \emph{verify the claims}
+    \end{itemize}
+    \item<3-> Future Work
+    \begin{itemize}
+        \item Extend to \emph{open-ended questions}\\$\Rightarrow$Straightforward extension via majority voting
+        \item Add different causal knowledge graphs
+        \item Explore ways to consider negative\\causal questions during training
+    \end{itemize}
+
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+
+  \begin{textblock*}{5cm}(9cm,3.8cm) 
+  \resizebox{0.7\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    
+    \node[object, xshift=2cm,yshift=2.2cm, anchor=north east] (P1) {fatigue};
+    \node[object, right= 0.7cm of P1] (P2) {sepsis};
+    \node[object, right= 0.7cm of P2] (P3) {ards};
+    
+    \node[person, above=0.7cm of P2] (T1) {pneumonia};
+    \node[person, above=0.7cm of T1] (T2) {bacteria};
+    \node[person, below=0.7cm of P3] (T3) {death};
+    \node[person, below=0.7cm of T3] (P8) {grief};
+    \node[person, below=0.7cm of P2] (T4) {kidney failure};
+    \node[person, below=0.7cm of T4] (P7) {anemia};
+
+    %\node[above=0.7cm of T2] (T5) {\textbf{Does pneumonia cause anemia?}};
+
+    \draw[arrow, line width=1.2pt] (T1) -- (P1);
+    \draw[arrow, line width=1.2pt] (T1) -- (P2);
+    \draw[arrow, line width=1.2pt] (T1) -- (P3);
+    \draw[arrow, line width=1.2pt] (T2) -- (T1);
+    \draw[arrow, line width=1.2pt] (P3) -- (T3);
+    \draw[arrow, line width=1.2pt] (P2) -- (T4);
+    \draw[arrow, line width=1.2pt] (T4) -- (P7);
+    \draw[arrow, line width=1.2pt] (T3) -- (P8);
+
+  \end{tikzpicture}}
+  \end{textblock*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}{~}
+  \scriptsize
+  \bibliographystyle{apalike}
+  %\renewcommand{\bibfont}{\fontsize{8pt}{9pt}\selectfont}
+  \bibliography{ref}
+  
+  \end{frame}
+
+%\begin{frame}{Thank you!}
+%\centering
+%	\vspace{2.5cm}
+%	{\huge\textbf{Questions?}}
+%	\\\vspace{2.5cm}
+%	{\large Data Science Group at Paderborn University}
+%	\\\vspace{.1cm}
+%	\centering
+%	\begin{tabular}{rl}
+%	Web: & \href{https://dice-research.org/}{dice-research.org} \\
+%	Code: & \href{https://github.com/dice-group}{github.com/dice-group} \\
+%	Twitter: & \href{https://twitter.com/DiceResearch}{@DiceResearch}
+%	\end{tabular}
+%\end{frame}
+
+\begin{frame}{$\mathbf{\lambda}$-return \& GAE}
+  \begin{itemize}
+    \item N-step returns:
+    \begin{equation*}
+      R_t^{(n)} = \sum_{i=0}^{n-1} \gamma^i \, r_{t+i} + \gamma^n V_{\psi} (s_{t+n}) 
+    \end{equation*}
+    \item Which $n$ is best?
+    \item $\lambda$-return exponentially-weighted average of $n$-step returns:
+    \begin{equation*}
+      %\vspace{-1cm}
+      R_t(\lambda) = (1- \lambda) \sum_{n=1}^{\infty} \lambda^{n-1} R_t^{(n)} = (1-\lambda) \sum_{n=1}^{T-t-1} \lambda^{n-1} \, R_t^{(n)} + \lambda^{T-t-1} R_t^{(T-t)} 
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Network Architecture}
+\begin{itemize}
+    \item LSTM:
+    \begin{equation*}
+      \mathbf{h_t}=
+        \begin{cases}
+          LSTM(\mathbf{0}; [\mathbf{q}, \mathbf{e_c}]), & \text{if}\ t=0 \\
+          LSTM(\mathbf{h_{t-1}}, [\mathbf{q}; \mathbf{e_t}]), & \text{otherwise}
+        \end{cases}
+    \end{equation*}
+    \item Policy network $\pi_{\theta}(a_t | s_t)$:
+    \begin{equation*}
+      \begin{split}
+      \pi_\theta(a_t | s_t) = \sigma(\mathbf{A_t} \times W_2 \times ReLU(W_1 \times \mathbf{h_t})) \\
+      a_t \sim Categorical(\pi_\theta(a_t | s_t))
+      \end{split}
+    \end{equation*}
+    \begin{itemize}
+      \item $\mathbf{A_t} \in \mathcal{R}^{|A(s_t)| \times 2d}$ embeddings of actions $a_t \in \mathcal{A}(s_t)$
+      \item $\sigma$: softmax operator
+    \end{itemize}
+    \item Value network $V_{\psi}(s_t)$:
+    \begin{equation*}
+      V_{\psi}(s_t) = W_4 \times ReLU(W_3 \times \mathbf{h_t})
+    \end{equation*}
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Entropy}
+  \begin{equation*}
+    H_{\pi_\theta} = \frac{1}{B(T-1)} \sum_{i}^{B} \sum_{t=0}^{T-2} (- \hspace{-0.3cm}\sum_{a_t \in \mathcal{A}(s_t)} \pi_\theta(a_t | s_t)  \log \pi_\theta(a_t | s_t))
+  \end{equation*}
+\end{frame}
+
+\begin{frame}{Beam Search Evaluation}
+  \begin{figure}
+    \centering
+	\resizebox{1.0\textwidth}{!}{%
+    \begin{tikzpicture}
+      \begin{axis}
+        [	%legend pos=outer north east,
+          legend cell align={left},
+          legend style={legend pos=south east},
+          xlabel=steps,
+          ylabel=accuracy,
+          grid=major,
+          xtick={0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400},
+          xticklabels={0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000},
+          ytick={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+          yticklabels={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+          xmin=0,
+          xmax=400,
+          ymin=0.1,
+          ymax=0.4,
+          width=14cm,
+          height=8cm]
+        \addplot [mark=none, tab20darkgreen, very thick]table [x=Step, y=r_msmarco_bm_50_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+        \addlegendentry{Width: 50}
+        \addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_msmarco_bm_10_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+        \addlegendentry{Width: 10}
+        \addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_msmarco_bm_5_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+        \addlegendentry{Width: 5}
+        \addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_msmarco_bm_1_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+        \addlegendentry{Width: 1}
+      \end{axis}
+    \end{tikzpicture}}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Inference Time}
+  \begin{figure}[ht]
+    \begin{minipage}{.45\linewidth}
+      \centering
+	\resizebox{1.16\textwidth}{!}{%
+  \begin{tikzpicture}
+    \hspace{-1.0cm}
+    \begin{axis}
+      [	%legend pos=outer north east,
+        legend cell align={left},
+        legend style={legend pos=north west},
+        xlabel=beam width,
+        ylabel=seconds,
+        %ylabel shift = 0.1 pt,
+        scaled y ticks = false,
+        grid=major,
+        xtick={1, 10, 20, 30, 40, 50},
+        xticklabels={1, 10, 20, 30, 40, 50},
+        ytick={0, 30, 60, 90, 120, 150, 180},
+        ytick={0, 30, 60, 90, 120, 150, 180},
+        extra x ticks={25},
+        extra x tick labels={\textbf{MS MARCO}},
+        extra x tick style={grid=none,ticks=major,ticklabel pos=right},
+        xmin=1,
+        xmax=50,
+        ymin=0,
+        ymax=180,
+        width=8cm,
+        height=8cm]
+      \addplot[mark=none, tab20darkred, very thick] table [x=width, y=numbers, col sep=comma] {data/length2_msmarco.csv};
+      \addlegendentry{Length: 2}
+      \addplot [mark=none, tab20darkblue, very thick]table [x=width, y=numbers, col sep=comma] {data/length3_msmarco.csv};
+      \addlegendentry{Length: 3}
+    \end{axis}
+  \end{tikzpicture}}
+    \end{minipage}
+    \hspace*{0.5cm}
+    \begin{minipage}{.45\linewidth}
+      \centering
+	\resizebox{1.16\textwidth}{!}{%
+  \begin{tikzpicture}
+    \begin{axis}
+      [	%legend pos=outer north east,
+        legend cell align={left},
+        legend style={legend pos=north west},
+        xlabel=beam width,
+        ylabel=seconds,
+        grid=major,
+        xtick={1, 10, 20, 30, 40, 50},
+        xticklabels={1, 10, 20, 30, 40, 50},
+        ytick={0, 30, 60, 90, 120, 150, 180},
+        ytick={0, 30, 60, 90, 120, 150, 180},
+        extra x ticks={25},
+        extra x tick labels={\textbf{SemEval}},
+        extra x tick style={grid=none,ticks=major,ticklabel pos=right},
+        xmin=1,
+        xmax=50,
+        ymin=0,
+        ymax=180,
+        width=8cm,
+        height=8cm]
+      \addplot[mark=none, tab20darkred, very thick] table [x=width, y=numbers, col sep=comma] {data/length2_semeval.csv};
+      \addlegendentry{Length: 2}
+      \addplot [mark=none, tab20darkblue, very thick]table [x=width, y=numbers, col sep=comma] {data/length3_semeval.csv};
+      \addlegendentry{Length: 3}
+    \end{axis}
+  \end{tikzpicture}}
+    \end{minipage}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Inverse Edges}
+  \begin{itemize}
+    \item Pro:
+    \begin{itemize}
+      \item Undo wrong actions
+      \item Reach nodes that could otherwise not be reached in $T$ steps
+    \end{itemize}
+    \item Con:
+    \begin{itemize}
+      \item Introduction of false positives
+      \item Atleast in theory it might not make sense to take an inverse edge
+    \end{itemize}
+    \item Does $e_1$ cause $e_4$? and $T = 2$:
+  \end{itemize}
+   \tikzset{person/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners,inner sep=5pt, minimum height=0.7cm} }
+  \tikzset{object/.style={draw,rectangle,fill=tab20darkgreen!60,rounded corners, inner sep=5pt, minimum height=0.7cm}}
+  \tikzset{type/.style={draw,rectangle,fill=lightgray,inner sep=5pt}}
+  \tikzset{>=triangle 45}
+  \tikzset{every picture/.style=thick}
+  \tikzstyle{every node}=[font=\small]
+    \tikzstyle{arrow} = [->, thick,>=stealth']
+
+  %\begin{textblock*}{5cm}(9cm,1.8cm) 
+  \begin{figure}
+    \centering
+  \resizebox{0.4\textwidth}{!}{
+  \begin{tikzpicture}[remember picture]
+    
+    %\node[object, xshift=2cm,yshift=2.2cm, anchor=north east] (P1) {fatigue};
+    \node[object, fill=tab20darkblue!60] (P1) {$e_1$};
+    \node[object, right= 0.7cm of P1] (P2) {$e_2$};
+    \node[object, right= 0.7cm of P2] (P3) {$e_3$};
+    \node[object, right= 0.7cm of P3, fill=tab20darkblue!60] (P4) {$e_4$};
+    \node[object, below= 0.7cm of P2, fill=tab20darkblue!60] (P5) {$e_5$};
+
+    \draw[arrow, line width=1.2pt] (P1) -- (P2);
+    \draw[arrow, line width=1.2pt] (P2) -- (P3);
+    \draw[arrow, line width=1.2pt] (P3) -- (P4);
+    \draw[arrow, line width=1.2pt] (P1) -- (P5);
+    \draw[arrow, line width=1.2pt] (P4) -- (P5);
+
+  \end{tikzpicture}}
+\end{figure}
+  %\end{textblock*}
+\end{frame}
+
+\begin{frame}{Examples}
+  \begin{table}
+    \centering
+    \scriptsize
+    \begin{tabular}{m{10cm} m{0.2cm}}
+      \toprule
+      \multicolumn{2}{c}{\textbf{Agent 3-Hop}} \\
+      \midrule
+       \vspace{0.2cm}
+      \textbf{Cause:} h.\ pylori \hspace{0.54cm} \textbf{Effect:} vomiting &\\ 
+       \vspace{0.2cm}
+      \textbf{Path:} h.\ pylori $\xRightarrow{\text{cause}}$ peptic ulcer disease $\xRightarrow{\text{cause}}$ vomiting $\xRightarrow{\text{\textit{STAY}}}$ vomiting \vspace{0.2cm}\\
+      \midrule
+       \vspace{0.2cm}
+      \textbf{Cause:} Xanax \hspace{0.92cm} \textbf{Effect:} hiccups &\\ 
+       \vspace{0.2cm}
+      \textbf{Path:} xanax $\xRightarrow{\text{cause}}$ anxiety $\xRightarrow{\text{cause}}$ stress $\xRightarrow{\text{cause}}$ hiccups \vspace{0.2cm}\\
+      \midrule
+       \vspace{0.2cm}
+      \textbf{Cause:} chocolate \hspace{0.39cm} \textbf{Effect:} constipation &\\ 
+       \vspace{0.2cm}
+      \textbf{Path:} chocolate $\xRightarrow{\text{cause}}$ constipation $\xRightarrow{\text{cause}}$ depression $\xRightarrow{\text{cause}^{-1}}$ constipation \vspace{0.2cm}\\
+      \midrule
+       \vspace{0.2cm}
+      \textbf{Cause:} rainfall \hspace{0.80cm} \textbf{Effect:} flooding &\\ 
+       \vspace{0.2cm}
+      \textbf{Path:} rainfall $\xRightarrow{\text{cause}}$ flooding $\xRightarrow{\text{cause}}$ landslides $\xRightarrow{\text{\textit{STAY}}}$ landslides \vspace{0.2cm}\\
+      \bottomrule
+    \end{tabular}
+    \end{table}
+\end{frame}
+
+\end{document}

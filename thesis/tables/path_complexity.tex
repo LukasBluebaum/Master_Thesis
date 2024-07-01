@@ -1,0 +1,78 @@
+%\begin{table}
+%\caption{The left column shows a list of patterns for binary causal question. To illustrate, \texttt{cause}
+%		 and \texttt{effect} can be arbitrary phrases, while \texttt{\pattern{cue\_word}} is a 
+%		 causal cue word from the right column. The right column shows a selection of causal cue words
+%		 with low ambiguity and high frequency~\cite{Girju2002CausalCue}. For the full lists
+%		 of causal patterns and cue words see the Appendix.}
+%\label{table-patterns}
+%\centering
+%\begin{tabular}{ll}
+%	\toprule
+%	\textbf{ID} & \textbf{Causal Question Patterns}\\
+%	\toprule
+%	\textbf{P1:} & {\small can} \pattern{cause} \pattern{cue\_word} \pattern{effect} \\
+%	\textbf{P2:} & {\small is} \pattern{effect} \pattern{cue\_word} {\small by} \pattern{cause} \\
+%	\textbf{P3:} & {\small could} \pattern{cause} \pattern{cue\_word} \pattern{effect}\\
+%	\textbf{P4:} & {\small might} \pattern{cause} \pattern{cue\_word} \pattern{effect}\\
+%	\textbf{P5:} & {\small would} \pattern{cause} \pattern{cue\_word} \pattern{effect}\\
+%	\textbf{P6:} & \pattern{cause} \pattern{cue\_word} \pattern{effect}\\
+%	\bottomrule
+%	\end{tabular}
+%	\quad
+%	\begin{tabular}{r}
+%	\toprule
+%	\textbf{Causal Cue Words}\\
+%	\toprule
+%	cause \\
+%	induce \\
+%	produce \\
+%	effect \\
+%	lead (to) \\
+%	result \\
+%	\bottomrule
+%	\end{tabular}
+%\end{table}
+\begin{table}
+\caption{Number of paths of length two starting at the cause (\textit{Paths}) compared to
+		 the number of paths between the cause and effect (\textit{Solutions}). Without 
+		 inverse edges.}
+\label{table-path-complexity}
+\centering
+\begin{tabular}{llrr} 
+			\toprule
+			\textbf{Cause} & \textbf{Effect} & \textbf{|Paths|} & \textbf{|Solutions|}\\
+			\toprule
+		   accident & death & 18.967 & 173 \\
+		   heart failure & angina &	3.533 &	5	\\
+		   pneumonia & dehydration &	7.662 &	18	\\
+		   cancer & abnormalities &	24.168 &	20	\\
+		   heart attack & death of & 7.395 &	1	\\
+		   illness & suicidal behavior & 25.226 &	3	\\
+		   stroke  & pain	& 10,700 & 55 \\
+		   complications & confusion & 12.839 &	19	\\
+		   infection & abdominal pain &28.955 &	53	\\
+			\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}
+\caption{Number of paths of length two starting at the cause (\textit{Paths}) compared to
+		 the number of paths between the cause and effect (\textit{Solutions}). Including 
+		 inverse edges.}
+\label{table-path-complexity-inverse}
+\centering
+\begin{tabular}{llrr} 
+			\toprule
+			\textbf{Cause} & \textbf{Effect} & \textbf{|Paths|} & \textbf{|Solutions|} \\
+			\toprule
+		   accident & death & 117.952 & 466 \\
+		   heart failure & angina &	71.892 &	27	\\
+		   pneumonia & dehydration &	66.715 &	84	\\
+		   cancer & abnormalities &	160.000 &	82	\\
+		   heart attack & death of & 96.144 &	1	\\
+		   illness & suicidal behavior & 192.224 &	13	\\
+		   stroke  & pain	& 109.305 & 255 \\
+		   complications & confusion & 152.593 & 138 \\
+		   infection & abdominal pain & 163.487 &	97	\\
+			\bottomrule
+\end{tabular}
+\end{table}

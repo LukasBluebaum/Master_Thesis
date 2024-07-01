@@ -1,0 +1,17 @@
+%\vspace*{\fill}
+\chapter*{Abstract}
+Causal questions seek to determine whether there exists a causal relationship 
+between different events or phenomena. 
+Specifically, they often aim to understand the underlying causes of an effect or what kind of effects a particular cause might have in the future.
+Causal questions are important for various use cases, for example, in virtual assistants or search engines.
+However, many current approaches to causal question answering cannot provide explanations or verifications for their answers. 
+Additionally, the approaches were often missing 
+large-scale datasets of causal relations.
+In this thesis, we explore the application of reinforcement learning on CauseNet, a large-scale causal knowledge graph, to answer binary causal questions inspired by the successful application of reinforcement learning in knowledge graph tasks, such as link prediction and fact-checking.
+We introduce an Actor-Critic based agent which learns to search through the graph to answer binary causal questions.
+Additionally, we bootstrap the agent with a supervised learning procedure and adapt an existing reward shaping strategy to deal 
+with large action spaces and sparse rewards.
+Our evaluation shows that our agent successfully prunes the search to answer binary causal questions efficiently.
+Moreover, our ablation study indicates that the supervised learning strategy provides a strong foundation upon which the agent can improve.
+Finally, we demonstrate how the paths learned by the agent can be used to explain causal relations, to indicate the specific mechanisms by which a cause produces an effect.
+%\vspace*{\fill}

@@ -1,0 +1,68 @@
+\begin{figure}[h]
+\hspace*{-2cm}
+\resizebox{1.2\linewidth}{!}{
+\begin{ganttchart}[y unit title=0.5cm,
+y unit chart=0.7cm,
+vgrid={*{6}{draw=none},dotted},
+hgrid,x unit=15mm,
+hgrid style/.style={draw=black!10, line width=.9pt},
+%title label anchor/.style={below=-1.6ex},
+title/.style={fill=black!20, draw},
+%title/.style={line width=1.8pt},
+bar/.style={fill=tab20lightblue, draw},
+milestone/.append style={xscale=3},
+%title left shift=0,
+%title right shift=0,
+title height=1,
+x unit=3pt,
+progress label text={},
+bar height=0.7,
+group right shift=0,
+group top shift=.6,
+time slot format=simple,
+group height=.3]{1}{154}
+%labels
+\gantttitle{July}{20} 
+\gantttitle{Aug.}{31} 
+\gantttitle{Sept.}{30} 
+\gantttitle{Oct.}{31}
+\gantttitle{Nov.}{30}
+\gantttitle{Dec.}{12} \\
+\gantttitlelist{1,...,22}{7}\\
+%tasks
+\ganttgroup{Literature Review}{2}{28} \\
+\ganttbar{(Causal) QA}{2}{28} \\
+\ganttbar{Policy Gradients}{2}{28} \\
+
+\ganttgroup{Implementation}{5}{140} \\
+\ganttbar{Setup CauseNet}{5}{21} \\
+\ganttbar{Setup Datasets}{5}{21} \\
+\ganttbar{Select Frameworks}{5}{35} \\
+\ganttbar{Binary Questions}{8}{49} \\
+\ganttbar{Cause/Effect Questions}{43}{84} \\
+\ganttbar{Complex Questions}{71}{140} \\
+
+\ganttgroup{Experiments}{50}{147} \\
+\ganttbar{Comparison Baselines}{50}{147} \\
+\ganttbar{Ablation Study}{78}{147} \\
+
+\ganttgroup{Thesis Writing}{2}{153} \\
+\ganttbar{Introduction}{2}{21} \\
+\ganttbar{Related Work}{2}{42} \\
+\ganttbar{Approach}{22}{140} \\
+\ganttbar{Implementation}{43}{140} \\
+\ganttbar{Evaluation}{71}{147} \\
+\ganttbar{Discussion}{113}{153} \\
+\ganttbar{Conclusion}{113}{153} \\ \\
+
+\ganttmilestone{Binary Questions}{49} \\
+\ganttmilestone{Cause/Effect Questions}{84} \\
+\ganttmilestone{Thesis Draft}{140} \\
+\ganttmilestone{Complex Questions}{140} \\
+\ganttmilestone{Submission}{153}
+%relations 
+%\ganttlink{elem0}{elem1} 
+
+\end{ganttchart}}
+\caption{Work plan of the thesis.}
+\end{figure}

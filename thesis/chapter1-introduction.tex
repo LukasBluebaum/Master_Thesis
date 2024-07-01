@@ -1,0 +1,66 @@
+% !TEX root = my-thesis.tex
+%
+\chapter{Introduction}
+\label{ch:introduction}
+
+Causal question answering addresses the problem of determining the causal relations between given causes and effects~\cite{KayeshCausalTransfer2020, DalalCausalQAEnhancing2021}. This could involve examining whether a causal relation exists or how a causal relation can be explained.
+For example, causal questions like \textit{``Does pneumonia cause anemia?''} ask for the validity of a causal relation.
+Instead, more complicated questions like \textit{``How does pneumonia cause death?''} might ask for an explanation of a causal relation. 
+Nowadays, the necessity to answer causal questions arises in various domains. For example, users often seek answers to causal questions from virtual assistants like Alexa or from search engines~\cite{Nguyen2016MSMARCO, Heindorf2020Causenet}. Similarly, causal questions and explanations for causal relations are important for argumentation~\cite{Walton2007Dialog, Habernal2018Argumentation} and automated decision-making~\cite{HassanzadeshCausalQA2019, KayeshCausalTransfer2020, Heindorf2020Causenet}.
+When possible, tracing the causality chain that led to an answer can provide further insights and a deeper understanding of the causal relationship in question.
+
+
+%\begin{itemize}
+%    \item example
+    %\item learned by humans through everyday life, still often not true or justified (CauseNet paper)
+    %\item maybe historic context, aristotle, socrates
+    %\item Important because many causal questions (asked by search engine users, c.f., MS MARCO), alexa, necessary for argumentation, decision making
+    %\item judea pearl, the book of why -- correlation -> causality
+%\end{itemize}
+
+
+Therefore, the literature started to introduce approaches for causal question answering~\cite{SharpCausalQAEmbeddings2016, HassanzadeshCausalQA2019, KayeshCausalTransfer2020, DalalCausalQAISWC2021}. 
+Some approaches focus on binary questions~\cite{HassanzadeshCausalQA2019, KayeshCausalTransfer2020}, 
+while others extend the setting to multiple-choice questions~\cite{SharpCausalQAEmbeddings2016, DalalCausalQAISWC2021}.
+However, a limitation of most of these approaches is the lack of explanations or verifiability of their answers. 
+Additionally, they identified the problem of a lack of large, high-quality datasets for causal relations~\cite{SharpCausalQAEmbeddings2016, HassanzadeshCausalQA2019, KayeshCausalTransfer2020}. 
+Consequently, the authors resorted to creating their own datasets from sources like news articles or Wikipedia to support the identification of causal relations to answer causal questions. 
+Thus, the introduction of CauseNet~\cite{Heindorf2020Causenet}, a large-scale knowledge graph consisting of causal relations with context information, provides new opportunities to build effective causal question answering systems. 
+Accordingly, we can apply various approaches from the knowledge graph literature that utilize the structure and rich semantics.
+
+In particular, reinforcement learning was successfully applied to knowledge graphs on different tasks such as link prediction~\cite{Xiong2017DeePpath}, 
+fact-checking~\cite{Das2018Minerva}, or conversational question answering~\cite{Kaiser2021Reinforcement}. 
+In this thesis, we explore whether we can model the
+causal question answering task as a sequential decision problem similar to the aforementioned approaches.
+Our initial focus is on binary causal questions, with the potential for extension to open-ended questions in future works.
+We train a reinforcement learning agent that learns to walk over CauseNet to find good inference paths to answer binary causal questions.
+ The resulting reasoning capabilities are beneficial for questions whose answers require a chain of multiple hops~\cite{Xiong2017DeePpath, Das2018Minerva, Wan2021GaussianPath}. 
+
+We implemented the agent via the Synchronous Advantage Actor-Critic (A2C) algorithm~\cite{Mnih2016A2C} and used 
+generalized advantage estimation (GAE)~\cite{Schulman2016GAE} to compute the advantage. 
+To address the challenge of a large action space in CauseNet~\cite{Heindorf2020Causenet}, we bootstrap the agent with a supervised learning procedure at the start~\cite{Xiong2017DeePpath}.
+During the supervised learning, the agent receives expert demonstrations to understand what good paths look like.
+To handle sparse rewards during training, we enhance 
+the agent with a reward shaping technique based on prior works~\cite{Yasunaga2021QAGNN}.
+Our evaluation demonstrates that the agent can effectively prune the search space, considering only a small number of nodes for each question. 
+Additionally, our experiments confirm that the supervised learning phase establishes a strong foundation for the agent, decreasing the uncertainty in identifying good paths and accelerating the learning process. 
+Moreover, we demonstrate how paths found by our agent can be used to explain the relations between a given cause and effect, including the option to take the original source into account~\cite{Heindorf2020Causenet}.
+Furthermore, we discuss straightforward options to extend our approach to different causal question types.
+% OLD
+%Using this approach, the agent is able to answer binary questions or questions that ask for a simple cause or effect. 
+%However, it might be hard to answer complex questions which expect more detailed answers. Consequently, for these question types, we propose to take the paths extracted by the agent and feed them into a pre-trained language model~\cite{Vaswani2017Attention, Khashabi2020UnifiedQA} as additional context. 
+%Dalal et al.~\cite{DalalCausalQAEnhancing2021, DalalCausalQAISWC2021} already consider a similar setup applied on CauseNet. However, they extract relevant causal relations via string matching while we use the paths found by the RL agent. Notably, the paths that led to an answer allow for post-hoc explanations and enable the user to follow the reasoning chain. In case of CauseNet~\cite{Heindorf2020Causenet}, we can also take the context information into account. Thus, for each relation on a path, we can provide supplemental explanations such as the original sentences and source URLs.
+
+To summarize, our contributions are:
+\begin{enumerate}
+    \item We introduce the first reinforcement learning approach for causal question answering on knowledge graphs.
+    \item We implemented an agent with the Synchronous Advantage Actor-Critic (A2C) algorithm, including a supervised learning procedure and a 
+        reward shaping technique to handle the challenges of the large action space and sparse rewards.
+    \item We extend an existing approach for extracting binary causal questions and introduce a new binary causal question dataset.
+\end{enumerate}
+
+
+Overall, this thesis is structured as follows. First, we introduce related work in Chapter~\ref{ch:related-work}. 
+Next, we present preliminaries discussing key methods and ideas our approach relies upon in Chapter~\ref{sec:preliminaries}. In Chapter~\ref{ch:approach}, we introduce our approach in detail, and in Chapter~\ref{ch:implementation}, we discuss our implementation.
+Chapter~\ref{ch:evaluation} evaluates our approach, including an ablation study. Finally, we discuss some findings and future work in Chapter~\ref{ch:discussion}, followed by the conclusion in Chapter~\ref{ch:conclusion}.
+

@@ -1,0 +1,46 @@
+\begin{algorithm}
+	\DontPrintSemicolon
+	\caption{The supervised learning algorithm that is used to 
+	bootstrap our agent. In the first step, we use a BFS to create expert demonstrations 
+	from the training questions. Afterward, we train the policy network $\pi_{\theta}(a_t | s_t)$
+	via the standard REINFORCE update using the expert demonstrations.
+	}%
+	\label{alg:supervised-alg}%
+	\textbf{Input:} Knowledge graph $\mathcal{K}$, questions $questions$, 
+	optimization steps $steps$, batch size $B$, path rollout length $T$, learning rate $lr$,
+	supervised ratio $\alpha$, entropy weight $\beta$ \\
+	\textbf{Output:} Trained Agent $\theta$ \\
+	\SetKwFunction{F}{SupervisedTrainAgent}
+	\SetKwProg{Fn}{Function}{:}{\KwRet $\theta$}
+	\Fn{\F{$\mathcal{K}$, $questions$, $steps$, $B$, $T$, $lr$, $\alpha$, $\beta$}}{%
+		Sample $\lfloor \alpha \cdot |questions| \rfloor$ $\overline{Q}$ from $questions$\;
+		$path\_rollouts = [ \ ]$\;
+		\For{\textbf{each} $q$ \textbf{in} $\overline{Q}$}{%
+			Link the cause and effect of $q$ to entities $e_c$ and $e_e$ in $\mathcal{K}$\;
+			%$((s_0, a_0),\dots, (s_{T-2}, a_{T-2}))  = $ \texttt{BFS($\mathcal{K}, q, c, e, T$)} \;
+			\tcp*[l]{Run BFS, note that $e_0=e_c$ and $e_n=e_e$}
+			$(e_0, e_1, \dots, e_n) = $ \texttt{BFS($\mathcal{K}, e_c, e_e, T$)}\;
+			Compute embeddings $\mathbf{q}$ and $\mathbf{e_t}$ for question $q$ and $0 \leq t \leq n-1$\;
+			Build $path\_rollout$ $((s_0, a_0, r_0),\dots, (s_{n-1}, a_{n-1}, r_{n-1}))$ \newline
+			\hspace*{0.3cm} where $s_t=(\mathbf{q}, e_t, \mathbf{e_t}, \mathbf{0}, e_e)$, $a_t=e_{t+1}$, and $r_t=1$ with $0 \leq t \leq n-1$\;
+			\If{$n-1 < T-2$}{
+				Pad the $path\_rollout$ with $(s_t, a_t, r_t)$ where $s_t=(\mathbf{q}, e_{n-1}, \mathbf{e_{n-1}}, \mathbf{0}, e_e)$, 
+				\hspace*{0.3cm} $a_t = \textit{STAY}$, and $r_t = 1$ for $n-1 < t \leq T-2$\;
+			}
+			$path\_rollouts.append(((s_0, a_0, r_0),\dots, (s_{T-2}, a_{T-2}, r_{T-2})))$\;
+		}
+		$batches = \texttt{BuildBatches}(path\_rollouts, B)$\;
+		\;
+		Initialize agent weights $\theta$\;
+		\For{step $=$ 0 \textbf{to} $steps - 1$}{%
+			$batch = batches[step \ \% \ |batches|]$\;
+			$policy\_update = 0$\;
+			\For{$\textbf{each}((s_0, a_0, r_0),\dots, (s_{T-2}, a_{T-2}, r_{T-2}))$ \textbf{in} batch}{%
+				$policy\_update \mathrel{+} = \sum_{t=0}^{T-2} \nabla_{\theta} \log \pi_{\theta}(a_t | s_t) \, r_t$\;
+			}
+			Compute the entropy regularization term $H_{\pi_{\theta}}$\;
+			$policy\_update = - \frac{policy\_update}{|batch|}$\;
+			$\theta = \theta - lr \cdot (policy\_update + \beta H_{\pi_{\theta}})$\;
+		}
+	}
+\end{algorithm}

@@ -1,0 +1,75 @@
+% !TEX root = proposal.tex
+%
+\chapter{Approach}
+\label{sec:approach}
+
+%\section{Preliminaries}
+%\label{sec:preliminaries}
+
+%\paragraph{Knowledge Graphs and CauseNet}
+
+%\begin{itemize}
+%    \item directed graph, triples of the form $(s,p,o) \in \mathcal{K}$
+%    \item CauseNet~\cite{Heindorf2020Causenet}, $s$ and $o$ cause and effect, one relation \textit{mayCause}, e.g. $(pneumonia, mayCause, sepsis)$ + context information for each triple
+%    \item First, only consider CauseNet, if time permits maybe extend to other graphs, e.g. integrate CauseNet into CSKG~\cite{Ilievski2021CSKG} or use different graphs and have multiple agents run on them in parallel, similar as in CONQUER~\cite{Kaiser2021Reinforcement}.
+%\end{itemize}
+
+\section{Overview}
+\label{sec:overview}
+
+First, we present a general overview of the approach based on related work. This serves as a starting point for our work to build and improve upon while acting as an initial baseline. Following previous approaches for RL on KGs~\cite{Das2018Minerva, Qiu2020Stepwise, Kaiser2021Reinforcement}, we model the causal question answering task as a sequential decision problem. Therefore, we define a Markov Decision Process (MDP) as a 4-tuple $(\mathcal{S}, \mathcal{A}, \delta, \mathcal{R})$ on the knowledge graph, where $\mathcal{S}$ represents the states (nodes), $\mathcal{A}$ the actions (edges), $\delta$ the transition dynamics, and $\mathcal{R}$ the reward. Additionally, we introduce a policy network $\pi_{\theta}(a|s)$ which generates a distribution over actions given a state $s$, i.e., the probability for each outgoing edge at the current node.
+For the initial baseline, we model $\pi_{\theta}$ as an MLP and later extend this to use LSTMs~\cite{Hochreiter1997LSTM} or GRUs~\cite{Cho2014GRU} as done in MINERVA~\cite{Das2018Minerva} and SRN~\cite{Qiu2020Stepwise}.
+Currently, most approaches apply REINFORCE~\cite{Williams1992REINFORCE} policy gradients~\cite{Wan2021GaussianPath}:
+\begin{equation}
+    \mathbb{E}_{\pi_{\theta}}[\nabla_{\theta} \log \pi_{\theta}(a|s) \ \mathcal{R}]\label{eq:1}
+\end{equation}
+
+During training, we run multiple rollouts for each example and update $\pi_\theta$ via equation \eqref{eq:1}. For each rollout, the agent receives a terminal reward $\mathcal{R}$ of 1 if the answer is correct and 0 otherwise. 
+%Additionally, we substract a baseline from the reward to reduce variance and add an entropy regularization term to increase the path variety~\cite{Das2018Minerva, Kaiser2021Reinforcement}.
+Moreover, we add inverse relations to the graph so the agent can undo wrong decisions~\cite{Xiong2017DeePpath, Das2018Minerva}. In the context of CauseNet, this also implies that the agent can move from an effect to its cause.
+
+\paragraph{Causal Questions}
+Following related work, we categorize causal questions into different types. This allows us to split the implementation into successive phases where we consider questions of increasing difficulty in each one. First, we start with binary causal questions of the form \textit{``Does X cause Y?''} which expect a yes or no answer. Afterward, we move to Cause/Effect questions like \textit{``What causes X?''}, which ask for a cause of an effect or vice versa. Multiple choice questions can also be grouped into this category. Finally, we consider more complex causal questions like \textit{``How does pneumonia cause death?''}. In this example, the question asks for an explanation of how a cause and effect relate to each other. Figure~\ref{fig:graph_example} illustrates a concrete example for each question type together with a snapshot from CauseNet~\cite{Heindorf2020Causenet} which is able to answer the questions.
+
+
+\input{figures/graph_example}
+
+\section{Potential Directions and Improvements}
+\label{sec3.3:dir}
+
+\paragraph{Representation of States and Actions}
+Finding suitable representations for the states (nodes) and actions (edges) is one of the essential aspects to consider. Previous approaches have already explored various directions in that regard. DeepPath ~\cite{Xiong2017DeePpath} encoded the states and actions via pre-trained KG embeddings models. In contrast, approaches like MINERVA~\cite{Das2018Minerva} optimized them during training, while other approaches embedded the labels of nodes and edges through word embeddings, e.g., CONQUER~\cite{Kaiser2021Reinforcement}. Since CauseNet also contains labels for each entity, we plan to follow approaches like CONQUER and use word embeddings to represent them. Starting with simple GloVe~\cite{Pennington2014GLOVE} embeddings for the first baseline and subsequently moving to encoders like BERT~\cite{DevlinBert2019}. Additionally, we plan to experiment with initialization from word embeddings and further optimization during training, which was not considered by related approaches yet. 
+
+As described in Section~\ref{sec:overview}, CauseNet contains only one edge type. Therefore, each action is entirely defined by the target node. Thus, we can decide whether to use one or two representations for each node, i.e., one for the node as state and action, respectively. Instead, another idea would be to use the provenance information of each relation~\cite{Heindorf2020Causenet} to define the actions. Here, we could use the patterns or original sentences through which the relation was found to create action representations.
+
+
+\paragraph{Reward Shaping}
+Due to the terminal reward at the end, the agent only receives feedback about the final answer. Specifically, there is no feedback about the quality of the path itself or the actions taken.
+To mitigate this problem, Lin et al.~\cite{Lin2020RewardShaping} introduced additional reward signals by scoring the final relation on a path with a pre-trained KG embedding model. Likewise, SRN~\cite{Qiu2020Stepwise} added a potential-based reward function that scores the action history at each step according to its semantic similarity with the question.
+
+Similarly, we propose to apply the agent on an augmented graph. As done by QA-GNN~\cite{Yasunaga2021QAGNN}, we use a language model to score each node according to its relevance to the question, including context information if available.
+Additionally, we can include the provenance information of each relation into the score computation.
+Due to runtime constraints, the score computation can be limited to a subgraph around the entities found in the question.
+Accordingly, the score serves as additional reward signal to provide feedback about the quality of the actions on a path. 
+
+
+\paragraph{Answering Complex Causal Questions}
+
+In Section~\ref{sec:overview}, we introduced three types of causal questions. 
+Generally, binary questions can be formulated as a query of the form $(cause, mayCause, \mathit{effect})?$ while Cause/Effect questions can be formulated as queries like 
+$(cause, mayCause, ?)$ or $(?, mayCause, \mathit{effect})$. Therefore, to provide an answer, the agent can walk over the graph and search for a suitable target node. However, we have to extend this setup for more challenging questions that ask for complex causal relations or an explanation of a causal relation. 
+Consequently, we plan to introduce a language model into our approach, which receives paths from the agent as additional context. Given a question, the agent walks over the graph as before. Afterward, we take the path, including the provenance information for each relation, and feed it into the language model together with the original question. 
+Figure~\ref{fig:graph_example} c) shows an example. A possible choice for the language model is UnifiedQA~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2}, which was trained on various question answering datasets of different domains. 
+
+\paragraph{Algorithm}
+Most existing approaches apply REINFORCE~\cite{Williams1992REINFORCE} policy gradients to train the agent. Thus, one straightforward direction is the application of more sophisticated policy gradient methods. Therefore, we plan to experiment with different methods, e.g., Actor-Critic algorithms~\cite{Mnih2016A2C} for further variance reduction. Existing approaches argued in favor of policy gradients methods because of the huge action spaces in these problems~\cite{Xiong2017DeePpath, Kaiser2021Reinforcement}. However, due to the unique characteristic that CauseNet contains only one edge type, it might be interesting to revisit ideas from value-based methods. Particularly, learning a state-state value function $Q(s, s')$~\cite{Edwards2020State} might be interesting for this setting. If time permits, we also plan to look into model-based methods, as done in M-Walk~\cite{Shen2018MWalk}.
+
+\section{Evaluation Setup}
+First, we have to create datasets for the three question types. As a starting point, we take Webis-CausalQA-22\footnote{https://webis.de/data/webis-causalqa-22}, a collection of 1.1M causal questions extracted from 10 popular question answering datasets, including MS MARCO~\cite{Nguyen2016MSMARCO} and SQuAD v2.0~\cite{Rajpurkar2018SQUAD2}. 
+
+%For each dataset, we will use the performance metric which is commonly applied in the literature.
+
+Next, we compare our approach to different baselines, starting with a simple approach that searches all hops up to length two on CauseNet. Furthermore, we consider different approaches from related work, particularly the approach by Dalal et al.~\cite{DalalCausalQAEnhancing2021, DalalCausalQAISWC2021}, which also uses CauseNet. Likewise, we compare our approach to UnifiedQA without the additional context provided by our agent. The selection of baselines also depends on the availability of their code.
+
+To better understand our approach, we will run several ablations. These include different graph augmentations, reinforcement learning algorithms, state-action representations, and network architectures. Possibly also scaling experiments on the number of parameters, including UnifiedQA models of different sizes. Similarly, we will compare performance on CauseNet-Precision and CauseNet-Full~\cite{Heindorf2020Causenet} and potentially other graphs as well.
+Additionally, we will conduct runtime experiments for inference and training. Finally, we will analyze the agents' paths concerning their reasonability and interpretability.

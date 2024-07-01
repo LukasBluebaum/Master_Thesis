@@ -1,0 +1,52 @@
+% !TEX root = proposal.tex
+%
+\chapter{Related Work}
+\label{sec:related}
+
+In the following, we summarize related work. First, we
+provide an overview of approaches for causal question answering. These approaches mainly employ pattern-based searches, embeddings, and language models. To the best of our knowledge, we are the first to use reinforcement learning for causal question answering. Afterward, we present several knowledge graphs that focus on causal and commonsense knowledge. Lastly, we discuss approaches that apply reinforcement learning to reasoning and question answering tasks on knowledge graphs.
+\paragraph{Causal Question Answering}
+
+Currently, only few approaches directly focus on the causal question answering task. Most of these approaches focus on binary questions, i.e., questions such as ``\textit{Does X cause Y?}'' which expect a yes or no answer. 
+Kayesh et al.~\cite{KayeshCausalTransfer2020} model the task as a transfer learning approach. Therefore, they extract cause-effect pairs from news articles via causal cue words. Subsequently, they transform the pairs into sentences of the form ``\textit{X may cause Y}'' and use them to finetune BERT~\cite{DevlinBert2019}. Similarly, Hassanzadesh et al. \cite{HassanzadeshCausalQA2019} employ large-scale text mining to answer binary causal questions. They introduce several unsupervised approaches ranging from simple string matching to embeddings computed via BERT. Each approach uses the text corpora to find evidence for a potential causal relation. Afterward, the evidence is used to compute a score that results in a yes or no answer depending on a threshold value.
+
+
+Instead, Sharp et al.~\cite{SharpCausalQAEmbeddings2016} consider multiple-choice questions of the form ``\textit{What causes X?}''. First, they mine cause-effect pairs from Wikipedia via syntactic patterns and train an embedding model to capture the semantics between the pairs. At inference time, they compute the embedding similarity between the question and each answer candidate. The approach by Dalal et al.~\cite{DalalCausalQAEnhancing2021, DalalCausalQAISWC2021} is most similar to ours.
+Given a question, they apply string matching to extract relevant causal relations from CauseNet~\cite{Heindorf2020Causenet}. Subsequently, they provide the question with the causal relations to a language model as additional context. In our work, we consider a similar idea for complex questions by selecting relevant paths via a reinforcement learning agent.
+
+Another approach that combines knowledge graphs and language models is QA-GNN~\cite{Yasunaga2021QAGNN}.
+Specifically, QA-GNN creates an augmented graph by scoring entities and relations with a pre-trained language model according to their relevance to the question. Then, QA-GNN applies a graph attention network (GAT)~\cite{Velickovic2018GAT} on the augmented graph to answer the question. Likewise, we apply the RL agent on an augmented graph to provide a better reward signal, similar to the reward shaping strategies by prior RL approaches on knowledge graphs~\cite{Lin2020RewardShaping, Qiu2020Stepwise}.
+
+
+%\cite{Lu2019ComplexSteiner} Build a quasi KG from text documents which contain entities and phrases relevant to the question. Assign weights to nodes and edges. Find answers by solving a Group Steiner Tree problem~\cite{ReichSteiner1989} on the created quasi KG. 
+
+\paragraph{Causal Knowledge Graphs}
+ConceptNet~\cite{Speer2017ConceptNet} is a general knowledge graph consisting of relations between natural language terms, which contains 36 relations, including a \textit{Causes} relation. CauseNet~\cite{Heindorf2020Causenet} and Cause Effect Graph~\cite{Li2020CauseEffectGraph} take a narrower view and specifically focus on causal relations extracted via linguistic patterns from web sources like Wikipedia and ClueWeb12~\footnote{https://lemurproject.org/clueweb12/}. 
+
+In contrast, ATOMIC~\cite{Sap2019ATOMIC} focuses on inferential knowledge. Specifically, ATOMIC consists of \textit{``If-Event-Then-X''} relations that are based on social interactions or events in the real world. ATOMIC$^{20}_{20}$~\cite{Hwang2021COMET} selects relations from ATOMIC and ConceptNet to create an improved graph while adding more relations via crowdsourcing. Instead, West et al.~\cite{West2021Symbolic} automate the curation of inferential relations by clever prompting of a language model. Finally, CSKG~\cite{Ilievski2021CSKG} builds a consolidated graph combining seven knowledge graphs, including ConceptNet and ATOMIC.
+For this thesis, we focus on CauseNet and potentially Cause Effect Graph because most of the other knowledge graphs either focus on inferential knowledge or are not limited to causal relations. Although, if time permits, making use of a combination of multiple graphs might be a potential improvement.
+
+\paragraph{Knowledge Graph Reasoning with Reinforcement Learning}
+
+In recent years, reinforcement learning on knowledge graphs has been applied in link prediction~\cite{Das2018Minerva}, fact checking~\cite{Xiong2017DeePpath}, or question answering~\cite{Qiu2020Stepwise}. Given a source and a target entity, DeepPath~\cite{Xiong2017DeePpath} learns to find paths between them. In the first step, DeepPath is trained in a supervised manner on paths found by BFS. Afterward, DeepPath applies REINFORCE~\cite{Williams1992REINFORCE} policy gradients to improve the policy further.
+During inference time, the paths are used to predict links between entities or check the validity of triples. Subsequently, MINERVA~\cite{Das2018Minerva} improves on DeepPath by introducing an LSTM~\cite{Hochreiter1997LSTM} into the policy network to account for the path history. Moreover, MINERVA does not require knowledge of the target entity and is trained end-to-end without supervision at the start. Lin et al.~\cite{Lin2020RewardShaping} propose two improvements for MINERVA. First, they apply reward shaping by scoring the paths with a pre-trained KG embedding model~\cite{Dettmers2018ConvE} to reduce the problem of sparse rewards. Second, they introduce a technique called action dropout, which randomly disables edges at each step. Action dropout serves as additional regularization and helps the agent learn diverse paths.
+
+
+Contrary to these approaches, M-Walk~\cite{Shen2018MWalk} does not rely on REINFORCE but instead looks at the problem from a model-based viewpoint. 
+Like AlphaZero~\cite{Silver2018AlphaZero}, M-Walk applies Monte Carlo Tree Search (MCTS) as a policy improvement operator. Thus, at each step, M-Walk applies MCTS to produce trajectories of an improved policy and subsequently trains the current policy to imitate the improved one. GaussianPath~\cite{Wan2021GaussianPath} takes a Bayesian view of the problem and represents each entity by a gaussian distribution to better model uncertainty.
+
+While all these approaches focus on link prediction or fact checking, there has been some work on natural language question answering.
+Qiu et al.~\cite{Qiu2020Stepwise} introduce the Stepwise Reasoning Network (SRN).
+They observe that for questions requiring multiple hops, different parts of the question should be important at each time step. Therefore, they introduce an attention mechanism into the policy network to enable the agent to attend to different parts of the question at every step. In turn, this should help the agent to focus on the aspect of the question that is important for the current decision. Additionally, SRN utilizes extra reward signals by considering the semantic similarities between the question and the action history via a potential-based reward function~\cite{Ng1999Potential}. CONQUER~\cite{Kaiser2021Reinforcement} employs REINFORCE policy gradients for conversational question answering. Multiple agents search through the graph in parallel and aggregate their answers at the end. Importantly, the reward depends on user feedback. A positive reward corresponds to a new question, and a negative reward to a reformulation of the last question.
+
+
+%\begin{itemize}
+%    \item Variational Reasoning for Question Answering with Knowledge Graph
+%    \item Anytime Bottom-Up Rule Learning for Knowledge Graph Completion
+%    \item Safran: https://arxiv.org/pdf/2109.08002.pdf
+%\end{itemize}
+
+
+
+
+%\textbf{https://github.com/THU-KEG/Knowledge\_Graph\_Reasoning\_Papers}

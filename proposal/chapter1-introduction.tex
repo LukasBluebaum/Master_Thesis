@@ -1,0 +1,34 @@
+% !TEX root = proposal.tex
+%
+\chapter{Introduction}
+\label{sec:intro}
+
+Causal question answering addresses the problem of determining the causal relations between given causes and effects~\cite{KayeshCausalTransfer2020, DalalCausalQAEnhancing2021}. This could involve examining whether a causal relation exists or how a causal relation can be explained.
+For example, causal questions like \textit{``What causes pneumonia?''} search for the cause of a given effect.
+Instead, more involved questions like \textit{``How does pneumonia cause death?''} might ask for an explanation of a causal relation. 
+Nowadays, the necessity to answer causal questions arises in various domains, for example, users often seek answers to causal questions from virtual assistants like Alexa or from search engines~\cite{Nguyen2016MSMARCO, Heindorf2020Causenet}. Similarly, causal questions and explanations for causal relations are important for argumentation~\cite{Walton2007Dialog, Habernal2018Argumentation} and automated decision-making~\cite{HassanzadeshCausalQA2019, KayeshCausalTransfer2020, Heindorf2020Causenet}.
+When possible, following the causality chains that led to an answer 
+can provide further explanations and allow for a deeper understanding of the causal relations in question.
+
+
+%\begin{itemize}
+%    \item example
+    %\item learned by humans through everyday life, still often not true or justified (CauseNet paper)
+    %\item maybe historic context, aristotle, socrates
+    %\item Important because many causal questions (asked by search engine users, c.f., MS MARCO), alexa, necessary for argumentation, decision making
+    %\item judea pearl, the book of why -- correlation -> causality
+%\end{itemize}
+
+
+Therefore, the literature started to introduce approaches for causal question answering~\cite{SharpCausalQAEmbeddings2016, HassanzadeshCausalQA2019, KayeshCausalTransfer2020, DalalCausalQAISWC2021}. However, they only consider simple questions and are typically focused on narrow types of questions. For instance, some only focus on binary questions~\cite{HassanzadeshCausalQA2019, KayeshCausalTransfer2020} while others focus on multiple-choice questions~\cite{SharpCausalQAEmbeddings2016, DalalCausalQAISWC2021}.
+Hence, we plan to gradually consider more complex questions and build a unified causal question answering system that can answer questions of different types.
+Additionally, existing approaches identified the problem of a lack of large, high quality datasets for causal relations~\cite{SharpCausalQAEmbeddings2016, HassanzadeshCausalQA2019, KayeshCausalTransfer2020}. Consequently, the authors resorted to creating their own datasets from sources like news articles or Wikipedia to support the identification of causal relations to answer causal questions. Thus, the introduction of CauseNet~\cite{Heindorf2020Causenet}, a large-scale knowledge graph consisting of causal relations with context information, provides new opportunities to build effective causal question answering systems. Accordingly, we can apply various approaches from the knowledge graph literature that utilize the structure and rich semantics.
+
+In particular, reinforcement learning was successfully applied to knowledge graphs on different tasks such as link prediction~\cite{Xiong2017DeePpath}, fact checking~\cite{Das2018Minerva}, or conversational question answering~\cite{Kaiser2021Reinforcement}. Hence, we propose to model the causal question answering task as a sequential decision problem similar to the aforementioned approaches.
+Therefore, we train a reinforcement learning agent that learns to walk over the graph to find good inference paths to answer causal questions. Starting at entities found in the question, the agent searches through the graph until it finds an answer entity. The resulting reasoning capabilities are beneficial for questions whose answers require a long chain of multiple hops~\cite{Xiong2017DeePpath, Das2018Minerva, Wan2021GaussianPath}. Additionally, the agent prunes the search space since it only considers small neighborhoods around entities of the question~\cite{Das2018Minerva, Qiu2020Stepwise}. 
+
+Using this approach, the agent is able to answer binary questions or questions that ask for a simple cause or effect. However, it might be hard to answer complex questions which expect more detailed answers. Consequently, for these question types, we propose to take the paths extracted by the agent and feed them into a pre-trained language model~\cite{Vaswani2017Attention, Khashabi2020UnifiedQA} as additional context. 
+Dalal et al.~\cite{DalalCausalQAEnhancing2021, DalalCausalQAISWC2021} already consider a similar setup applied on CauseNet. However, they extract relevant causal relations via string matching while we use the paths found by the RL agent. Notably, the paths that led to an answer allow for post-hoc explanations and enable the user to follow the reasoning chain. In case of CauseNet~\cite{Heindorf2020Causenet}, we can also take the context information into account. Thus, for each relation on a path, we can provide supplemental explanations such as the original sentences and source URLs.
+
+Overall, this proposal is structured as follows: First, we introduce related approaches on causal question answering, causal knowledge graphs, and reinforcement learning on knowledge graphs. Afterward, we give the concrete problem definition, including a breakdown of successive steps to answer causal questions of increasing difficulty. Besides, we discuss potential improvements and solutions and briefly describe the evaluation setup. Finally, we provide a preliminary thesis structure and a Gantt chart detailing the time schedule.
+

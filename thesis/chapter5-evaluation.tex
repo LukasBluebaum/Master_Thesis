@@ -1,0 +1,824 @@
+% !TEX root = my-thesis.tex
+%
+
+\chapter{Evaluation}
+\label{ch:evaluation}
+In this chapter, we present the evaluation of our reinforcement learning
+agent for causal question answering.
+To start, we provide an overview of the used datasets, discuss
+ the baselines that we used for comparison, and introduce the applied evaluation measures.
+ Following this, we discuss parameter settings and further implementation details like 
+ framework versions and the hardware used for training.
+Afterward, we compare our agent to two baselines on the binary causal 
+question answering task. Next, we conduct an ablation analysis 
+to evaluate the effectiveness of the different parts of our approach.
+Similarly, we showcase several experiments to analyze the impact of 
+supervised learning and different decoding techniques.
+Finally, we conclude this section by providing a few example paths found by 
+our agent.
+
+
+\section{Datasets}
+\label{sec:datasets}
+As shown in Section~\ref{subsec:causal-questions}, only one of the ten 
+datasets from CausalQA~\cite{Bondarenko2022CausalQA} contained a larger number
+of binary causal questions. Thus, we used the extracted questions from MS MARCO~\cite{Nguyen2016MSMARCO} as
+one dataset and added SemEval~\cite{Hendrickx2010SemEval, SharpCausalQAEmbeddings2016}
+as a second dataset. SemEval was curated by Sharp et al.~\cite{SharpCausalQAEmbeddings2016} by
+selecting a subset of 1730 word pairs from the semantic relation classification 
+benchmark SemEval 2010 Task 8~\cite{Hendrickx2010SemEval}.
+Among the 1730 word pairs, there are 865 causal pairs and 865 non-causal pairs.
+
+\begin{table}
+\caption{Number of questions for training, validation, and testing for the MS MARCO~\cite{Nguyen2016MSMARCO}
+and SemEval~\cite{SharpCausalQAEmbeddings2016} datasets. The ``|Effective Train|'' column shows the number of questions 
+the agent has available for learning.}
+\label{table-evaluation-datasets}
+\centering
+\begin{tabular}{lcccc} 
+			\toprule
+			\textbf{Dataset} & \textbf{|Train|} & \textbf{|Validation|} & \textbf{|Test|} & \textbf{|Effective Train|}\\
+			\toprule
+		   MS MARCO & 2169 & 241 & 263 & 1350 \\
+		   SemEval & 1384 & 173 & 173 & 812 \\
+			\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{table-evaluation-datasets} shows the number of training, validation, and test questions for both
+datasets. For SemEval, we randomly selected 10\% for validation and 
+10\% for testing. For MS MARCO, we used the original validation set for testing and randomly
+selected 10\% from the training set for validation. We optimized hyperparameters 
+on the validation sets and then retrained using the combined training and validation sets.
+
+The ``|Effective Train|'' column shows the number of questions available
+for learning when combining the training and validation sets. As discussed in 
+Section~\ref{sec:approach-description}, we only train on positive causal questions,
+so we remove the negative causal questions during training. Additionally, we have to 
+remove the questions from the training set where cause or effect cannot 
+be found in CauseNet. Finally, that leaves us with 1350 questions for MS MARCO and 812 questions
+for SemEval.
+
+\section{Baselines}
+\label{sec:baselines}
+
+We compare our agent with two baselines: a breadth-first search (BFS) on CauseNet
+ and the question answering system UnifiedQA-v2~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2}.
+ The CauseNet paper~\cite{Heindorf2020Causenet} already used a BFS to estimate
+ the recall of the graph. While they only considered paths up to length two, we 
+ extended their implementation and added support for paths of arbitrary length.
+ As done for our agent, we link the cause and effect of each question  
+ to the graph using exact string matching. Afterward, BFS tries to find a path between cause 
+ and effect to answer the question.
+ 
+ BFS serves as a strong baseline and an upper limit on performance in certain circumstances.
+ However, it should be noted that BFS can only be applied to binary causal questions. 
+ Our agent only supports binary questions as proof of concept, but there are straightforward extensions to open-ended questions, as discussed in Chapter~\ref{ch:discussion}.
+ For a given path length constrained, the BFS performs an exhaustive search and can represent an 
+ upper limit on performance, with one exception.
+ The exception is the potential introduction of false positives through inverse edges and errors in CauseNet.
+ For example, assume we have a binary causal question~\textit{``Does X cause Y?''} 
+ for which a causal relation only holds in the opposite direction, such that $Y$ causes $X$.
+ Through the introduction of inverse edges, the BFS might find a path between the two and erroneously answer ``yes''.
+ Similarly, if CauseNet contains an error and indicates that $X$ causes $Y$, the BFS will also provide an incorrect answer.
+ While the BFS will always make these mistakes,\footnote{Assuming the false positives exist in CauseNet and can be found under the given path length constraint.} the agent 
+ prunes the search space and can learn to avoid them.
+ We summarize the implications of inverse edges in Chapter~\ref{ch:discussion}.
+
+As a second baseline, we use UnifiedQA-v2~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2}. 
+UnifiedQA-v2 is a text-to-text language model based on the T5 architecture~\cite{Raffel2020T5}
+and achieved state-of-the-art performance on multiple datasets.
+It was pre-trained on 20 question answering datasets of different formats, including extractive 
+and abstractive question answering, multiple choice, and yes/no questions.
+We chose UnifiedQA-v2 because it was used by CausalQA~\cite{Bondarenko2022CausalQA} for their 
+evaluation, from which we extracted the binary causal questions.
+
+We could not include the causal question answering approaches from related work 
+because they are not open source, except for the approach by Kayesh et al.~\cite{KayeshCausalTransfer2020}. 
+However, Kayesh et al. only released the code for training without the datasets and pre-trained models, so it was not possible for us to use their approach.
+Similarly, the reinforcement learning-based approaches we encountered were either 
+developed for different tasks~\cite{Kaiser2021Reinforcement}, had no available code~\cite{Qiu2020Stepwise}, 
+or were designed for graphs with multiple relation types rather than 
+the single relation type found in CauseNet~\cite{Das2018Minerva, Lin2020RewardShaping}.
+
+\section{Evaluation Measures}
+\label{sec:measures}
+We evaluated our agent using standard binary classification measures: accuracy, $F_1$-score, 
+precision, and recall. Precision represents the fraction of correct positive predictions, and recall 
+represents the fraction of positive examples that were correctly predicted.
+
+\begin{equation}
+	Precision = \frac{TP}{TP + FP} \ \ \ \ \ \ \ Recall = \frac{TP}{TP + FN}
+\end{equation}
+
+Subsequently, the $F_1$-Score represents the harmonic mean of precision and recall, 
+while
+accuracy represents the fraction of correct predictions among all predictions.
+
+\begin{equation}
+	F_1\text{-}Score = 2\frac{precision \cdot recall}{precision + recall}
+\end{equation}
+
+\begin{equation}
+	Accuracy = \frac{TP + TN}{TP + FP + FN + TN}
+\end{equation}
+
+Note that, at inference time, the accuracy is equal to the normalized reward of the agent.
+During inference, the reward is always 0 or 1 since there is no cumulative reward 
+calculation or reward shaping. Specifically, the agent receives a reward of 1 if the answer
+is correct, which is defined as the agent finding a path when the causal 
+relationship holds or not finding a path when the causal relationship does not hold. Conversely, the agent receives
+a reward of 0 if the answer is incorrect. Thus, summing the rewards over all questions and 
+dividing by the number of questions is equal to the accuracy.  
+
+
+\section{Experimental Setup}
+\label{sec:impl-details}
+
+\begin{table}
+\centering
+\caption{The parameter configurations and the ranges we tested during hyperparameter optimization.
+		 They are divided into general deep learning parameters, general reinforcement learning parameters,
+		 and the parameters that are specific to our approach. This should not be a definite categorization, e.g., there are many 
+		 other approaches which also use beam search, it is just provided to give a better overview.
+		 }
+\label{table-parameters}
+\begin{tabular}{lrr} 
+			\toprule
+			\textbf{Parameter} & \textbf{Settings} & \textbf{Settings Sweeps}\\
+			\midrule
+			\textbf{General} & \\
+			Learning Rate & 1e-4 & \{1e-3, 1e-4, 3e-4, 5e-5\}  \\ 
+			Batch Size &  128  & \{16, 32, 64, 128\} \\
+			Gradient Norm Clipping &  0.5 & \{0.5\}\\
+			Hidden Dimension $h$ &  2048 & \{2048\}\\
+			Seed &  42 & \{42\} \\
+			Training Steps & 2000 & \{2000\}  \\ 
+			\midrule
+			\textbf{General Reinforcement Learning} & \\
+			Discount $\gamma$ & 0.99 & \{0.9, 0.99, 1.0\}  \\
+			GAE lambda $\lambda$ & 0.95 & \{0.95, 0.99, 1.0\} \\
+			Entropy Weight $\beta$ & 0.01 & \{0.01, 0.05, 0.1\} \\
+			\midrule
+			\textbf{Specific to Our Approach} & \\
+			Beam Width & 50 & \{1, 5, 10, 50\} \\
+			Path Rollout Length Training & 3 & \{2, 3\} \\
+			Path Rollout Length Evaluation & 3 & \{2, 3\} \\
+			Supervised Ratio $\alpha$ & 0.8 & \{0.2, 0.4, 0.6, 0.8, 1.0\}  \\
+			Supervised Steps & 300 & \{100, 200, 300\}  \\
+			Supervised Batch Size & 64  & \{32, 64\} \\
+			Reward Shaping Weight $\omega$ & 0.0 & \{0.0, 0.1, 0.5, 1.0\}  \\
+			\bottomrule
+\end{tabular}
+\end{table}
+In the following, we discuss the experimental setup for our agent, including the setup 
+of the baselines, hyperparameter optimizations, and further implementation details.
+The agent is configured with supervised learning at the start and uses the A2C 
+algorithm together with beam search during inference time. Furthermore, inverse edges are 
+added to CauseNet.
+However, we did not include the reward shaping in the general configuration since 
+it did not increase performance.
+We further discuss the reward shaping in the ablation study in Section~\ref{sec:ablation-study}.
+
+Table~\ref{table-parameters} presents the configurations for the experiments' parameters, including the ranges for hyperparameter sweeps.
+For each dataset, we optimized the 
+parameters on the validation set and retrained on the combined training and 
+validation set afterward. The table shows the configurations for MS MARCO, whereas SemEval differs 
+in two cases: 1.0 for the supervised ratio $\alpha$ and 32 for the supervised batch size.
+For the hyperparameter ranges, we selected common values from the literature and values 
+ successfully used in prior works~\cite{Das2018Minerva, Lin2020RewardShaping, Peng2018Mimic}.
+In the experiments below, we denote the agent with path rollout length 2 as 
+Agent 2-Hop and path rollout length 3 as Agent 3-Hop. Following related work~\cite{Das2018Minerva, Qiu2020Stepwise}, we consider paths up to length 3. However, 
+this can be extended in future work. Similarly, the BFS 
+baseline is called CauseNet 1-Hop, CauseNet 2-Hop, or CauseNet 3-Hop.
+
+
+For optimization, we used the AdamW~\cite{Loshchilov2019AdamW} optimizer, with the PyTorch default settings of
+$\beta_1 = 0.9 $, $\beta_2 = 0.999$, and weight decay $0.01$.
+Additionally, we apply gradient norm clipping~\cite{Pascanu2013Clip} with a value of $0.5$.
+We initialized the weights of the LSTM via orthogonal initialization~\cite{Saxe2014Orthogonal} and 
+the weights of the feedforward networks with the kaiming initialization~\cite{Kaming2015Init}.
+Moreover, we used Python 3.8.16 and PyTorch 1.13.0 for our experiments.
+For the UnifiedQA-v2~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2} baseline, we chose 
+the \textit{allenai/unifiedqa-v2-t5-base-1363200} checkpoint, which is included in 
+the HuggingFace Transformers framework~\cite{Wolf2020Transformers}.
+Furthermore, we used CauseNet-Precision~\cite{Heindorf2020Causenet} for our 
+experiments due to its smaller action space and higher precision compared 
+to CauseNet-Full. In future work, we will experiment with CauseNet-Full, especially 
+with the performance tradeoffs between the precision and recall orientations of the 
+two graphs.
+
+To embed the states and actions, we used GloVe embeddings~\cite{Pennington2014Glove} with a dimensionality of 300.
+When an entity contained more than one word, we used the average of their embeddings. Similarly, for the 
+questions and sentences, we used the average of the embeddings of their words. 
+We experimented with embeddings computed from RoBERTa~\cite{Liu2019Roberta} and MPNet~\cite{Song2020MPNet} 
+but did not see performance improvements. 
+One disadvantage of using GloVe embeddings might be that not all occurring words have a 
+corresponding embedding. However, this occurs only for around 1\% of the entities in CauseNet-Precision, and 
+manual checks showed that these do not pose problems for the questions in our datasets.
+For the reward shaping, we slightly adapted the implementation of Yasunaga et al.~\cite{Yasunaga2021QAGNN} 
+for our task. As the language model, we used the \textit{roberta-large}~\cite{Liu2019Roberta} checkpoint
+from the Huggingface Transformers framework~\cite{Wolf2020Transformers}.
+
+All experiments were run on Noctua 2\footnote{\url{https://pc2.uni-paderborn.de/de/hpc-services/available-systems/noctua2}} on the Paderborn 
+Center for Parallel Computing (PC$^2)$\footnote{\url{https://pc2.uni-paderborn.de/}} and Google Colab.
+Accordingly, we used a number of different GPUs for our experiments, mainly  NVIDIA A100 
+40GB, NVIDIA Tesla T4 16GB, and NVIDIA Tesla V100 16GB.
+
+
+\section{Evaluation of our Reinforcement Learning Agent}
+\label{sec:evaluation-approach}
+
+
+\renewcommand{\tabcolsep}{6pt}
+\begin{table}
+\centering
+\caption{Evaluation results of our agent on the MS MARCO and SemEval test sets compared to the BFS baseline and UnifiedQA-v2. The table reports the 
+		accuracy: \textbf{A}, $F_1$-Score: $\mathbf{F_1}$, recall: \textbf{R}, precision: \textbf{P}, and the number of nodes \textbf{|Nodes|} that were visited.
+		The results for UnifiedQA-v2 using the paths of the agent as context are denoted as \textit{UnifiedQA-v2 -- Context}. The results when combining two approaches by answering ``yes'' if at least one of them answers ``yes'' are denoted as \textit{UnifiedQA-v2 | CauseNet 3-Hop} and \textit{UnifiedQA-v2 | Agent 3-Hop}.
+		}
+\label{table-evaluation-msmarco}
+\begin{tabular}{lccccr} 
+			\toprule
+			\multicolumn{6}{c}{\textbf{MS MARCO}}\\
+			\midrule
+			& \textbf{A} & \textbf{$\mathbf{F_1}$} & \textbf{R} & \textbf{P} & \textbf{|Nodes|}\\
+			\midrule
+			%Agent 1-Hop & 0.36 & & \\
+			Agent 2-Hop & 0.460 & 0.562 & 0.408 & 0.901 & 6,774\\
+			Agent 3-Hop & 0.529 & 0.648 & 0.511 & 0.884 & 7,034 \\
+			\midrule
+			CauseNet 1-Hop & 0.259 & 0.241 & 0.139 & 0.912 & 14,937 \\ 
+			CauseNet 2-Hop & 0.494 & 0.612 & 0.471 & 0.875 & 454,126 \\ 
+			CauseNet 3-Hop & 0.589 & 0.714 & 0.605 & 0.871 & 878,090\\ 
+			\midrule
+			UnifiedQA-v2 & 0.722 & 0.828 & 0.789 & 0.871 & -- \\
+			UnifiedQA-v2 | CauseNet 3-Hop & 0.787 & 0.877 & 0.897 & 0.858 & --  \\
+			UnifiedQA-v2 | Agent 3-Hop & 0.779 & 0.872 & 0.883 & 0.860 & -- \\
+			UnifiedQA-v2 --- Context & 0.661 & 0.789 & 0.740 & 0.842 & --\\
+			\midrule
+			Majority Baseline (True) & 0.848  & 0.9177 & 1.000 & 0.848 & --\\
+			\bottomrule
+\end{tabular}
+%\end{table}
+%\begin{table}[t]
+\label{table-evaluation-semeval}
+\centering
+\renewcommand{\tabcolsep}{6.47pt}
+\hspace{-0.20cm}
+%\caption{Evaluation SemEval.}
+\begin{tabular}{lccccr} 
+			\toprule
+			\multicolumn{6}{c}{\textbf{SemEval}}\\
+			\midrule
+			& \textbf{A} & \textbf{$\mathbf{F_1}$} & \textbf{R} & \textbf{P} & \textbf{|Nodes|}\\
+			\midrule
+			%Agent 1-Hop & 0.36 & & \\
+			Agent 2-Hop &  0.769 & 0.714 & 0.575 & 0.943 & 4,641\\
+			Agent 3-Hop & 0.775 & 0.727 & 0.598 & 0.929 & 4,947\\
+			\midrule
+			CauseNet 1-Hop & 0.665 & 0.508 & 0.345 & 0.968 & 6,080 \\ 
+			CauseNet 2-Hop & 0.815 & 0.787 & 0.678 & 0.937 & 270,779 \\ 
+			CauseNet 3-Hop & 0.751 & 0.754 & 0.759 & 0.750 & 637,821\\ 
+			\midrule
+			UnifiedQA-v2 & 0.497 & 0.653 & 0.943 & 0.500 & --\\
+			UnifiedQA-v2 | CauseNet 3-Hop & 0.520 & 0.677 & 1.000 & 0.512 & -- \\
+			UnifiedQA-v2 | Agent 3-Hop & 0.520 & 0.675 & 0.989 & 0.512 & -- \\
+			UnifiedQA-v2 --- Context & 0.566 & 0.651 & 0.805 & 0.547 & -- \\
+			\midrule
+			Majority Baseline (True) & 0.503 & 0.669 & 1.000 & 0.503 & -- \\
+			\bottomrule
+\end{tabular}
+\end{table}
+In Table~\ref{table-evaluation-msmarco}, we show the evaluation results of our agent on the MS MARCO and SemEval 
+test sets. We compare our agent in the Agent 2-Hop and Agent 3-Hop configurations with the corresponding 
+BFS configurations CauseNet 1-Hop, CauseNet 2-Hop, and CauseNet 3-Hop. Moreover, we compare the results 
+to UnifiedQA-v2 and explore some combinations of approaches as described below.
+The table displays the accuracy, $F_1$-Score, recall, precision,
+and the number of visited nodes summed over all questions for each dataset. Note that the number of visited nodes is not applicable for the UnifiedQA-v2-based approaches and the majority baseline.
+
+When comparing the results of our agent and BFS, we observe that the agent does not fully match the performance of BFS in most configurations.
+For instance, in the 2-Hop case, the agent is slightly behind by around 0.03 accuracy on MS MARCO and around 0.05 accuracy on SemEval.
+However, the agent achieves better precision for all configurations, particularly for the 3-Hop configuration on SemEval.
+In that case, the results of BFS are worse in the 3-Hop setting compared to the 2-Hop setting due to the 
+ introduction of many false positives through inverse edges.\footnote{The results of CauseNet 3-Hop on SemEval are improved when not using inverse edges. However, using inverse edges improves the results for all other configurations. Thus, we included them in the graph as they also improve the performance of our agent, as shown in the ablation study in Section~\ref{sec:ablation-study}.} 
+As discussed in~\ref{sec:baselines}, inverse edges can lead to mistakes by potentially introducing false positives.
+When going from 2 hops to 3 hops on SemEval, it is possible to reach more false positives than before. 
+This is especially indicated by the reduced precision of CauseNet 3-Hop, i.e., the precision is now 0.75, down from 0.875 of CauseNet 2-Hop.
+
+In contrast, the agent mitigates this problem by pruning the search space and avoiding paths leading to wrong answers, still achieving a precision of 0.929.
+Therefore, the agent slightly improves the results when comparing the 2 hop and 3 hop configurations. Also, the agent performs better than 
+BFS in the 3-Hop configuration on SemEval.
+Overall, compared to BFS, our agent has several advantages:
+(1) it can be extended to open-ended causal questions as discussed in Chapter~\ref{ch:discussion},
+(2) it can to avoid false positives introduced by inverse edges and errors in CauseNet as shown above,
+(3) it prunes the search space and
+decreases the number of visited nodes by around 99\%, on average searching only 25-30 nodes per question.
+In comparison, BFS searches approximately 1500 nodes per question with 2 hops and 3500 nodes per question with 3 hops.
+
+Furthermore, the results of UnifiedQA-v2~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2} vary significantly between the two datasets. 
+Specifically, UnifiedQA-v2 is better than our agent on MS MARCO and worse on SemEval.
+This can be attributed to UnifiedQA-v2's tendency to answer with ``yes'' most of the time. 
+In addition, the MS MARCO test set is heavily skewed towards positive questions (80\% positive, 20\% negative), whereas the SemEval test set is more balanced (50\% positive, 50\% negative).
+Thus, the results of UnifiedQA-v2's are better on MS MARCO than on SemEval.
+ UnifiedQA-v2's tendency to answer ``yes'' is also indicated by the high recall of 0.943 and low precision of 0.500 on SemEval.
+
+
+Finally, we explored a few simple strategies to combine our agent or BFS with UnifiedQA-v2.
+\textit{UnifiedQA-v2 | CauseNet 3-Hop} and \textit{UnifiedQA-v2 | Agent 3-Hop} answer with ``yes'' when at least one of the two approaches answers with ``yes''.
+Both strategies increase accuracy on MS MARCO by around 0.02 and SemEval by around 0.06.
+Indicating, that even though UnifiedQA-v2 answers with ``yes'' in most cases, it still misses some of the questions 
+where ``yes'' is the correct answer.
+
+Moreover, we tested the effectiveness of using paths learned by our agent as context for UnifiedQA-v2.
+For a given question, we took the learned paths and extracted the original sentence of each relation on the path.
+Subsequently, we concatenated the question with the sentences and provided the resulting text as input to UnifiedQA-v2.
+The results are mixed, with a decrease in accuracy by 0.06 on MS MARCO and an increase in accuracy by 0.06 on SemEval.
+The issue may be that the context provided by the agent can be misleading. For instance, as the agent is not perfect, it does not always find 
+correct paths for ``yes'' questions. Thus, on MS MARCO, where a majority of questions are positive, the agent 
+might mislead UnifiedQA-v2 to change correct ``yes'' answers to ``no'' erroneously. In contrast, on SemEval, where many more questions 
+are negative, the agent helps UnifiedQA-v2 to correctly change wrong ``yes'' answers to ``no''.
+
+
+%\include{tables/table-evaluation}
+
+
+\section{Ablation Study}
+\label{sec:ablation-study}
+
+\begin{table}
+\renewcommand{\tabcolsep}{3pt}
+\centering
+\caption{Results of the ablation study, where we compare different configurations of our approach. For each configuration, we 
+either remove ($\mathbf{-}$) or add ($\mathbf{+}$) some component. The evaluation measures are 
+abbreviated as follows: accuracy: \textbf{A}, $F_1$-Score: $\mathbf{F_1}$, recall: \textbf{R}, precision: \textbf{P}.}
+\label{table-ablation}
+	\begin{tabular}{lcccccccc} 
+		\toprule
+		& \multicolumn{4}{c}{\textbf{MS MARCO}} & \multicolumn{4}{c}{\textbf{SemEval}}  \\
+		\cmidrule(lr{.6em}){2-5} \cmidrule(l{0.3em}){6-9}
+		&\textbf{A} & \textbf{$\mathbf{F_1}$} & \textbf{R} & \textbf{P} & \textbf{A} & \textbf{$\mathbf{F_1}$} & \textbf{R} & \textbf{P}\\
+		\midrule
+		Agent 2-Hop & \textbf{0.460} & \textbf{0.562} & \textbf{0.408} & 0.901 & \textbf{0.769} & \textbf{0.714} & \textbf{0.575} & 0.943 \\ 
+		\midrule
+		$\mathbf{-}$ Beam Search & 0.293 & 0.306 &0.184 & \textbf{0.911} & 0.613 & 0.374 &0.230& \textbf{1.000} \\
+		$\mathbf{-}$ Supervised Learning & 0.342 & 0.397 & 0.257 & 0.891 & 0.682 & 0.538 & 0.369 & \textbf{1.000} \\
+		$\mathbf{-}$ Actor-Critic & 0.441 & 0.539 & 0.386 & 0.896 & 0.740 & 0.657 &0.494& 0.977 \\
+		$\mathbf{-}$ Inverse Edges & 0.422 & 0.513 &0.359& 0.899 & 0.740 & 0.651 & 0.483 & \textbf{1.000} \\
+		$\mathbf{+}$ Reward Shaping (0.1) & 0.449 & 0.548 & 0.395 & 0.898 & 0.757 & 0.691 & 0.540 & 0.959 \\
+		$\mathbf{+}$ Reward Shaping (1.0) & 0.403 &0.489 & 0.336 & 0.893 & \textbf{0.769} & 0.706 & 0.552 & 0.980 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+In our ablation study in Table~\ref{table-ablation}, we investigate the performance impact of the different components 
+of our approach. Accordingly, we try out the following configurations: (1) without supervised 
+learning, i.e., we run Algorithm~\ref{alg:algorithm} directly and train the policy and value network with 
+policy gradients from scratch, (2) without Actor-Critic, we remove the critic and only run the 
+REINFORCE algorithm using the Monte-Carlo return as described in Section~\ref{subsec:rl}, (3) we remove the beam search and use 
+greedy decoding to only sample the most probable path, (4) without inverse edges in the graph, 
+(5) with the extra reward signal through the reward shaping technique as explained in Section~\ref{sec:reward-shaping}.
+Hence, a $-$ indicates the removal of some component, while a $+$ indicates the addition of a component.
+Each configuration uses Agent 2-Hop with the settings described in Section~\ref{sec:impl-details}.
+
+Overall, beam search has the biggest impact on performance. When beam search 
+is exchanged for greedy decoding, the accuracy drops from 0.460 to 0.293 on 
+MS MARCO and from 0.769 to 0.613 on SemEval. As further analysis of the decoding techniques shows (Section~\ref{sec:decoding-analysis}), 
+the accuracy keeps increasing with a higher beam width.
+Notably, greedy decoding slightly increases the precision on MS MARCO and does reach a precision of 1.0 compared 
+to the 0.943 of beam search on SemEval.
+Thus, the number of false positives decreases when only using the most probable path found by greedy decoding.
+Moreover, supervised learning has the second highest impact. We analyze the effectiveness of supervised learning in Section~\ref{sec:evaluation-supervised} in more detail.
+
+The Actor-Critic algorithm only has a minor 
+impact with a difference of around 0.02-0.03 points accuracy on both datasets. Note that the $\lambda$-returns~\cite{Sutton1998RL} and GAE~\cite{Schulman2016GAE}, which we use in our Actor-Critic implementation, 
+rely on multi-step returns and a bootstrap estimate via the value function to reduce the variance. At the moment, we only consider shorter paths 
+of lengths 2 and 3, which might limit their impact. For this reason, we hypothesize that the impact 
+compared to REINFORCE could further increase with longer paths.
+Additionally, the removal of inverse edges from the graph results in a slight decrease in overall performance but an increase in precision on the SemEval dataset to 1.0. 
+That is because the removal of inverse edges reduces the probability of finding false positives, as discussed in Section~\ref{sec:evaluation-approach}.
+
+Next, we discuss the impact of reward shaping. 
+Recall that the reward shaping introduces the $\omega$ hyperparameter used to weigh the auxiliary rewards when the search is unsuccessful.
+During hyperparameter optimization, we tried a range of settings between 0.0 and 1.0.
+We show two configurations in Table~\ref{table-ablation}, one for a smaller weight (0.1) and one for a
+larger weight (1.0). 
+As $\omega$ increases, the accuracy on the MS MARCO dataset decreases.
+Smaller $\omega$ either decrease the performance slightly or make no difference at all.
+In contrast, on SemEval, the configuration of $\omega$ is less impactful, e.g., with $\omega = 1.0$, the accuracy is identical to the standard configuration.
+Notably, on SemEval, increasing $\omega$ also increases the precision.
+Overall, introducing the language model score as an auxiliary reward signal 
+is not beneficial in its current form.
+Hence, this reward shaping technique requires further investigation and improvements 
+in future work.
+
+\section{Effects of Supervised Learning}
+\label{sec:evaluation-supervised}
+
+Below, we investigate the effects of supervised learning in more detail. To recall, the 
+objective of supervised learning was to bootstrap the agent with expert demonstrations to 
+better deal with the large action space. Thus, the expert demonstrations should 
+leave the agent with a strong foundation for further improvement.
+
+Therefore, we compare the performance of the agent when using different numbers of supervised 
+training steps. Figure~\ref{figure-supervised} shows the accuracy of the agent on the SemEval~\cite{SharpCausalQAEmbeddings2016} test set
+depending on the number of reinforcement learning training steps. Each of the three runs was 
+bootstrapped with a different number of supervised training steps. Thus, at step 0, we can see the accuracy 
+directly after supervised learning without any training via reinforcement learning.
+We observe that the run with 100 steps is significantly worse than the runs with 200 and 300 steps.
+It starts at around 0.67 directly after supervised learning and increases to around 0.72.
+Whereas the difference between 200 to 300 steps is already a lot smaller. Both start between 0.72 and 0.73 and follow 
+similar trajectories afterward to reach an accuracy of around 0.76 after 2000 reinforcement learning steps.
+To maintain the clarity of the figures, we did not include a run with 400 steps, but the trend of diminishing returns 
+on the number of supervised steps continues. 
+This suggests that increasing the number of supervised steps beyond 300 does not improve performance.
+Likewise, we observed similar results on the MS MARCO~\cite{Nguyen2016MSMARCO} dataset.
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=south east},
+			xlabel=steps,
+			ylabel=accuracy,
+			grid=major,
+			xtick={0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200},
+			xticklabels={0, 200 , 400, 600, 800, 1000, 1200, 1400, 1800, 1900, 2000},
+			ytick={0.66, 0.68, 0.70, 0.72, 0.74, 0.76, 0.78, 0.80},
+			yticklabels={0.66, 0.68, 0.70, 0.72, 0.74, 0.76, 0.78, 0.80},
+			xmin=0,
+			xmax=200,
+			ymin=0.66,
+			ymax=0.80,
+			width=14cm,
+			height=9cm]
+		%\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_400_1.0_32_5000_ff - accuracy, col sep=comma] {data/supervised_accuracy.csv};
+		%\addlegendentry{400 Steps}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_semeval_300_1.0_32_5000_ff - accuracy, col sep=comma] {data/supervised_accuracy.csv};
+		\addlegendentry{300 Steps}
+		\addplot[mark=none, tab20darkblue, very thick] table [x=Step, y=r_semeval_200_1.0_32_5000_ff - accuracy, col sep=comma] {data/supervised_accuracy.csv};
+		\addlegendentry{200 Steps}
+		\addplot[mark=none, tab20darkorange, very thick] table [x=Step, y=r_semeval_100_1.0_32_5000_ff - accuracy, col sep=comma] {data/supervised_accuracy.csv};
+		\addlegendentry{100 Steps}
+	\end{axis}
+\end{tikzpicture}
+	\caption{The figure shows the accuracy of the agent on the SemEval test set depending on the number of reinforcement learning training steps. Each 
+			run was bootstrapped with a different number of supervised training steps. Step 0 shows the performance directly after supervised learning.}
+	\label{figure-supervised}
+\end{figure}
+
+\begin{figure}[ht]
+	\begin{minipage}{.45\linewidth}
+	  \centering
+\begin{tikzpicture}
+	\hspace{-1.5cm}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north west},
+			xlabel=steps,
+			ylabel=|paths|,
+			%ylabel shift = 0.1 pt,
+			scaled y ticks = false,
+			grid=major,
+			xtick={0, 50, 100, 150, 200},
+			xticklabels={0, 500, 1000, 1500, 2000},
+			ytick={0, 20000, 40000, 60000, 80000},
+			yticklabels={0, 20000, 40000, 60000, 80000},
+			xmin=0,
+			xmax=200,
+			ymin=0,
+			ymax=80000,
+			width=8cm,
+			height=8cm]
+		%\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_400_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		%\addlegendentry{400 Steps}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_semeval_300_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{300 Steps}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_semeval_200_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{200 Steps}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_semeval_100_1.0_32_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{100 Steps}
+		\addplot [mark=none, tab20darkgreen, very thick]table [x=Step, y=r_semeval_no_super_5000_ff - unique_paths, col sep=comma] {data/supervised_paths.csv};
+		\addlegendentry{0 Steps}
+	\end{axis}
+\end{tikzpicture}
+	\end{minipage}
+	\hspace*{0.7cm}
+	\begin{minipage}{.45\linewidth}
+	  \centering
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north east},
+			xlabel=steps,
+			ylabel=entropy,
+			grid=major,
+			xtick={0, 50, 100, 150, 200},
+			xticklabels={0, 500, 1000, 1500, 2000},
+			ytick={0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5},
+			yticklabels={0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5},
+			xmin=0,
+			xmax=200,
+			ymin=0.0,
+			ymax=3.5,
+			width=8cm,
+			height=8cm]
+		%\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_400_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		%\addlegendentry{400 Steps}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_semeval_300_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{300 Steps}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_semeval_200_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{200 Steps}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_semeval_100_1.0_32_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{100 Steps}
+		\addplot[mark=none, tab20darkgreen, very thick] table [x=Step, y=r_semeval_no_super_5000_ff - entropy, col sep=comma] {data/supervised_entropy.csv};
+		\addlegendentry{0 Steps}
+	\end{axis}
+\end{tikzpicture}
+	\end{minipage}
+	\caption{The figure shows the number of unique paths explored during reinforcement learning training on the left and the mean entropy of the action distribution of the policy network on the right. Each run was bootstrapped with a different number of supervised training steps.}
+	\label{figure-supervised-entropy}
+  \end{figure}
+Moreover, Figure~\ref{figure-supervised-entropy} illustrates the number of unique paths explored during training on the left and
+the mean entropy of the action distribution of the policy network on the right. Notably, with an increasing number 
+of supervised steps, the entropy of the policy network drops significantly.
+Hence, the number of explored paths during reinforcement learning also decreases as shown on the left in Figure~\ref{figure-supervised-entropy}.
+These findings indicate that supervised learning
+effectively establishes a strong foundation for the reinforcement learning agent.
+For example, an agent trained with 300 supervised steps only explores $21.6\%$ of the paths of 
+an agent without any supervised steps at the start.
+Accordingly, the agent trained with 300 supervised steps can exploit the knowledge acquired during supervised learning to follow better paths.
+In contrast, the agent trained without any supervised learning steps requires more exploration and fails to achieve the same performance, 
+as shown in Table~\ref{table-ablation}.
+
+
+%\include{figures/supervised}
+
+
+\section{Decoding Analysis}
+\label{sec:decoding-analysis}
+
+In the following, we investigate the effects of different beam widths on the MS MARCO test set. We experimented with 
+beam widths of 1, 5, 10, and 50 and present the results in Figure~\ref{figure-beam-search-whole-path}. In these experiments, we did not apply 
+supervised learning at the beginning to focus solely on the effects of beam width settings. Additionally, 
+we increased the training steps from 2000 to 4000 because, without supervised learning, there is still 
+some progress after 2000 steps.
+
+In general, as the beam width increases, accuracy also increases. For example, the difference between a width of 1 and a width of 50 is 0.09 points accuracy after 2000 steps.
+The exception is between widths of 5 and 10, which reach the same accuracy after 2000 steps and have similar curves.
+In Section~\ref{sec:search}, we noted that beam search can be viewed as an interpolation between greedy decoding and BFS.
+Therefore, if the beam width is set too high, the task may become too easy as the agent performs an exhaustive search, disregarding runtime considerations for a moment.
+We can already observe this effect when looking at the accuracy immediately after initialization at step 0.
+As the beam width increases, the accuracy without any learning also increases slightly, e.g., for widths of 10 and 50 from 0.18 to 0.21.
+However, the increases are minor, and even beam width 50 only starts at 0.21 and still has a lot of learning progress afterward.
+Additionally, the performance from width 50 does not reach the performance with supervised learning or the performance of the BFS.
+This suggests that a beam width of 50 is still reasonable, and we could have also used a higher beam width, like 100, for our experiments. 
+
+Our standard setup evaluates the paths by checking if any of their entities match the target entity. 
+However, in Section~\ref{sec:env}, we introduced the \textit{STAY} action and trained the agent 
+ on path rollouts of the same length.
+ Hence, when the agent reaches the target entity, it should have learned to use the \textit{STAY} action and stop advancing.
+Therefore, we investigate whether the agent behaves accordingly in Figure~\ref{figure-beam-search-final-node}.
+
+The runs in Figure~\ref{figure-beam-search-final-node} use the same setup as those in Figure~\ref{figure-beam-search-whole-path}, 
+except that we only compare the last node on each path to the target entity.
+This setup allows us to determine whether the agent always stays at the target entity or sometimes walks over it.
+The figures illustrate that there is a slight difference between the two setups.
+In case we only check the last node, the accuracy after 4000 steps is always around 0.01-0.02 points accuracy lower when comparing the runs with the same beam width.
+While the difference is small, this suggests that the agent does not always stop when necessary.
+As an illustration, we provide an example in Section~\ref{sec:path-analysis}.
+
+
+%\include{figures/beam_search_width}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=south east},
+			xlabel=steps,
+			ylabel=accuracy,
+			grid=major,
+			xtick={0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400},
+			xticklabels={0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000},
+			ytick={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+			yticklabels={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+			xmin=0,
+			xmax=400,
+			ymin=0.1,
+			ymax=0.4,
+			width=14cm,
+			height=8cm]
+		\addplot [mark=none, tab20darkgreen, very thick]table [x=Step, y=r_msmarco_bm_50_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+		\addlegendentry{Width: 50}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_msmarco_bm_10_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+		\addlegendentry{Width: 10}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_msmarco_bm_5_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+		\addlegendentry{Width: 5}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_msmarco_bm_1_5000_ff - accuracy, col sep=comma] {data/beam_path_inverse.csv};
+		\addlegendentry{Width: 1}
+	\end{axis}
+\end{tikzpicture}
+	\caption{Accuracy on the MS MARCO test set depending on the number of reinforcement learning training steps. Each run uses a different beam width and our standard setup, where we compare all entities on the paths to the target entity. 
+			 }
+	\label{figure-beam-search-whole-path}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=south east},
+			xlabel=steps,
+			ylabel=accuracy,
+			grid=major,
+			xtick={0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400},
+			xticklabels={0, 400, 800, 1200, 1600, 2000, 2400, 2800, 3200, 3600, 4000},
+			ytick={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+			yticklabels={0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4},
+			xmin=0,
+			xmax=400,
+			ymin=0.1,
+			ymax=0.4,
+			width=14cm,
+			height=8cm]
+		\addplot [mark=none, tab20darkgreen, very thick]table [x=Step, y=r_msmarco_bm_50_no_5000_ff - accuracy, col sep=comma] {data/beam_final_inverse.csv};
+		\addlegendentry{Width: 50}
+		\addplot [mark=none, tab20darkorange, very thick]table [x=Step, y=r_msmarco_bm_10_no_5000_ff - accuracy, col sep=comma] {data/beam_final_inverse.csv};
+		\addlegendentry{Width: 10}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=Step, y=r_msmarco_bm_5_no_5000_ff - accuracy, col sep=comma] {data/beam_final_inverse.csv};
+		\addlegendentry{Width: 5}
+		\addplot[mark=none, tab20darkred, very thick] table [x=Step, y=r_msmarco_bm_1_no_5000_ff - accuracy, col sep=comma] {data/beam_final_inverse.csv};
+		\addlegendentry{Width: 1}
+	\end{axis}
+\end{tikzpicture}
+	\caption{Accuracy on the MS MARCO test set depending on the number of reinforcement learning training steps. Each run uses a different beam width. The figure illustrates a slightly different setup, where we only compare the last node on each path to the target entity. }
+	\label{figure-beam-search-final-node}
+\end{figure}
+
+\section{Inference Time}
+\label{sec:inference time}
+
+\begin{figure}[ht]
+	\begin{minipage}{.45\linewidth}
+	  \centering
+\begin{tikzpicture}
+	\hspace{-1.0cm}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north west},
+			xlabel=beam width,
+			ylabel=seconds,
+			%ylabel shift = 0.1 pt,
+			scaled y ticks = false,
+			grid=major,
+			xtick={1, 10, 20, 30, 40, 50},
+			xticklabels={1, 10, 20, 30, 40, 50},
+			ytick={0, 30, 60, 90, 120, 150, 180},
+			ytick={0, 30, 60, 90, 120, 150, 180},
+			extra x ticks={25},
+			extra x tick labels={\textbf{MS MARCO}},
+			extra x tick style={grid=none,ticks=major,ticklabel pos=right},
+			xmin=1,
+			xmax=50,
+			ymin=0,
+			ymax=180,
+			width=8cm,
+			height=8cm]
+		\addplot[mark=none, tab20darkred, very thick] table [x=width, y=numbers, col sep=comma] {data/length2_msmarco.csv};
+		\addlegendentry{Length: 2}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=width, y=numbers, col sep=comma] {data/length3_msmarco.csv};
+		\addlegendentry{Length: 3}
+	\end{axis}
+\end{tikzpicture}
+	\end{minipage}
+	\hspace*{0.5cm}
+	\begin{minipage}{.45\linewidth}
+	  \centering
+\begin{tikzpicture}
+	\begin{axis}
+		[	%legend pos=outer north east,
+			legend cell align={left},
+			legend style={legend pos=north west},
+			xlabel=beam width,
+			ylabel=seconds,
+			grid=major,
+			xtick={1, 10, 20, 30, 40, 50},
+			xticklabels={1, 10, 20, 30, 40, 50},
+			ytick={0, 30, 60, 90, 120, 150, 180},
+			ytick={0, 30, 60, 90, 120, 150, 180},
+			extra x ticks={25},
+			extra x tick labels={\textbf{SemEval}},
+			extra x tick style={grid=none,ticks=major,ticklabel pos=right},
+			xmin=1,
+			xmax=50,
+			ymin=0,
+			ymax=180,
+			width=8cm,
+			height=8cm]
+		\addplot[mark=none, tab20darkred, very thick] table [x=width, y=numbers, col sep=comma] {data/length2_semeval.csv};
+		\addlegendentry{Length: 2}
+		\addplot [mark=none, tab20darkblue, very thick]table [x=width, y=numbers, col sep=comma] {data/length3_semeval.csv};
+		\addlegendentry{Length: 3}
+	\end{axis}
+\end{tikzpicture}
+	\end{minipage}
+	\caption{Inference time in seconds for the test sets depending on the beam width and path rollout length. The figure on the left shows the time for the MS MARCO test set, and the figure on the right for the SemEval test set. The agent takes longer for MS MARCO in both cases because the MS MARCO test set contains 90 questions more compared to SemEval.}
+	\label{figure-inference}
+\end{figure}
+
+Figure~\ref{figure-inference} illustrates the inference runtime for both test sets, depending on the beam width and path rollout length.
+The left figure presents the runtime on the MS MARCO test set, while the right figure shows the runtime for the SemEval test set.
+Note that the time measurements do not include the setup of the environment, such as the 
+loading of the knowledge graph and embeddings.
+
+The MS MARCO test set contains 263 questions, while the SemEval test set only contains 173 questions. As a result, the runtime for MS MARCO is longer in both cases.
+For a beam width of 50, the inference on MS MARCO takes 52 seconds for path rollout length 2 and 174 seconds for path rollout length 3, resulting in a runtime per question of around 0.20 seconds and 0.66 seconds, respectively.
+Also, on SemEval, the inference takes 36 (0.21) seconds and 97 (0.56) seconds, so the time per question is 
+similar for both datasets.
+We observe that when increasing the path rollout length from 2 to 3,
+the runtime 
+already increases by a factor of around 3.
+However, there is much room for improvement in the current beam search implementation,
+particularly regarding batching and memory movements between CPU and GPU.
+Generally, we can make a trade-off between performance and runtime.
+As the beam width decreases, runtime also decreases; for example, in the case of a beam width of 1, the runtime would be around 0.05 seconds per question.
+However, this would also decrease the accuracy, as shown in Figure~\ref{figure-beam-search-whole-path}.
+
+As illustrated in the plots, the beam width does not always increase the runtime.
+While the beam width is an important factor for the runtime, there are other factors to consider.
+For example, the runtime also depends on the degree of the nodes on the explored paths, as the beam search must consider each neighbor as a potential candidate.
+
+\section{Examples}
+\label{sec:path-analysis}
+
+Lastly, we provide some examples that our agent found. In Table~\ref{table-examples},
+we illustrate two examples of Agent 2-Hop and four examples of Agent 3-Hop.
+Each example includes a cause and an effect together with a path between them. 
+The arrows on the paths indicate whether the agent took the standard \textit{cause} edge, the \textit{STAY} action, or an inverse edge \textit{$cause^{-1}$}.
+
+The paths learned by the agent can be used to follow the complete reasoning chain to examine 
+the mechanisms of how a cause produces an effect. For example, the first path from Agent 3-Hop indicates that the 
+bacterium \textit{helicobacter pylori} can lead to the development of \textit{peptic ulcer} disease, which can 
+lead to \textit{vomiting}. The first examples for Agent 2-Hop and Agent 3-Hop demonstrate the agent's 
+ability to utilize the \textit{STAY} action. In general, the usage of the \textit{STAY} action works
+well in most cases. However, as shown in Section~\ref{sec:decoding-analysis}, there are some exceptions where the \textit{STAY} should have been used but was not.
+An example can be seen in the last path for Agent 3-Hop in Table~\ref{table-examples}.
+The agent should have stayed at \textit{flooding} but went ahead to \textit{landslides} and stayed there.
+
+Moreover, the agent learned to use inverse edges to recover from mistakes. In the third example for Agent 3-Hop, the 
+agent went one step too far, from \textit{constipation} to \textit{depression}, and used an inverse edge afterward to 
+return to the \textit{constipation} entity.
+
+\begin{table}
+\centering
+\caption{Some examples that our agent found. Each example consists of a cause, an effect, and a path between them. For each path, we indicate whether the agent used a normal \textit{cause} edge, the \textit{STAY} action, or an inverse edge \textit{$cause^{-1}$}.}
+\label{table-examples}
+\begin{tabular}{m{13cm} m{0.2cm}}
+  \toprule
+  \multicolumn{2}{c}{\textbf{Agent 2-Hop}} \\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} stress \hspace{1cm} \textbf{Effect:} skin rashes &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} stress $\xRightarrow{\text{cause}}$ skin rashes $\xRightarrow{\text{\textit{STAY}}}$ skin rashes\vspace{0.2cm}\\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} cigarettes \hspace{0.32cm} \textbf{Effect:} nausea &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} cigarettes $\xRightarrow{\text{cause}}$ cancer $\xRightarrow{\text{cause}}$ nausea\vspace{0.2cm}\\
+  \bottomrule
+  \toprule
+  \multicolumn{2}{c}{\textbf{Agent 3-Hop}} \\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} h.\ pylori \hspace{0.54cm} \textbf{Effect:} vomiting &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} h.\ pylori $\xRightarrow{\text{cause}}$ peptic ulcer disease $\xRightarrow{\text{cause}}$ vomiting $\xRightarrow{\text{\textit{STAY}}}$ vomiting \vspace{0.2cm}\\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} Xanax \hspace{0.92cm} \textbf{Effect:} hiccups &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} xanax $\xRightarrow{\text{cause}}$ anxiety $\xRightarrow{\text{cause}}$ stress $\xRightarrow{\text{cause}}$ hiccups \vspace{0.2cm}\\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} chocolate \hspace{0.39cm} \textbf{Effect:} constipation &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} chocolate $\xRightarrow{\text{cause}}$ constipation $\xRightarrow{\text{cause}}$ depression $\xRightarrow{\text{cause}^{-1}}$ constipation \vspace{0.2cm}\\
+  \midrule
+   \vspace{0.2cm}
+  \textbf{Cause:} rainfall \hspace{0.80cm} \textbf{Effect:} flooding &\\ 
+   \vspace{0.2cm}
+  \textbf{Path:} rainfall $\xRightarrow{\text{cause}}$ flooding $\xRightarrow{\text{cause}}$ landslides $\xRightarrow{\text{\textit{STAY}}}$ landslides \vspace{0.2cm}\\
+  \bottomrule
+\end{tabular}
+\end{table}

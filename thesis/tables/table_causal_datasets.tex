@@ -1,0 +1,77 @@
+\begin{table}
+\centering
+\caption{The ten datasets that are part of CausalQA~\cite{Bondarenko2022CausalQA}. The
+		\textit{Total} column shows the total number of causal questions for each dataset, 
+		while the \textit{Binary} column shows the number of binary causal questions.
+		Note that the test sets are either not publically available or 
+		are missing the answers.}
+\label{table-causal-datasets}
+	\begin{tabular}{lrrrrr} 
+		\toprule
+		\textbf{Dataset} & \multicolumn{2}{c}{\textbf{Total}} & \multicolumn{2}{c}{\textbf{Binary}} & \textbf{Reference} \\
+		\cmidrule(lr{.6em}){2-3} \cmidrule(l{0.4em}){4-5}
+		&\textbf{|Train|} & \textbf{|Valid|} & \textbf{|Train|} & \textbf{|Valid|} & \\
+		\midrule
+		PAQ & 692,645 & 76,961 & 1 & --  & \cite{Lewis2021PAQ}\\ 
+		GooAQ & 146,253 & 33 & 167 & -- &  \cite{khashabi:2021}\\
+		MS MARCO & 41,764 & 2,558 & 2,410 & 263 & \cite{nguyen:2016} \\
+		Natural Questions & 2,796 & 71 & -- & -- & \cite{kwiatkowski:2019}\\
+		ELI5 & 131,035 & 4,834 & 2 & --  & \cite{fan:2019}\\
+		SearchQA &663 & 117 & -- & -- & \cite{dunn:2017}\\
+		SQuAD v2.0 & 4,342 & 483 & -- & -- & \cite{rajpurkar:2018}\\
+		NewsQA &1,303 & 62 & -- & -- & \cite{trischler:2017}\\
+		HotpotQA &355& 35 & -- & -- & \cite{yang:2018}\\
+		TriviaQA & 637 & 66 & -- & -- & \cite{joshi:2017} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+\begin{table}
+\caption{The causal cue words we used to detect binary causal questions. The list was
+		curated by Girju et al.~\cite{Girju2002CausalCue} to include words that are 
+		good indicators for causal relations, meaning they should have low ambiguity and high frequency.}
+\label{table-cue-words}
+\centering
+	\begin{tabular}{rrrr}
+	\toprule
+	\multicolumn{4}{c}{\textbf{Causal Cue Words}} \\
+	\midrule
+	induce & provoke & relate (to) & trigger off \\
+	give rise (to) & arouse & link (to) & bring on \\
+	produce & elicit & stem (from)& result (from)\\
+	generate & lead (to)& originate & trigger\\
+	effect & derive (from)& bring forth& cause \\
+	bring about & associate (with)& lead up &\\
+	\bottomrule
+	\end{tabular}
+\end{table}
+\begin{table}
+\caption{The left table shows the question words we used for the binary question
+extraction. The right table shows the forbidden POS tags for the binary question extraction.}
+\label{table-questions-pos-tags}
+	\centering
+	\begin{tabular}{rr}
+		\toprule
+		\multicolumn{2}{c}{\textbf{Question Words}} \\
+		\midrule
+		is & do\\
+		can  & does\\
+		might & did \\
+		would & will \\
+		could & are\\
+		may \\
+		\bottomrule
+	\end{tabular}
+	\quad
+	\begin{tabular}{ll}
+		\toprule
+		\textbf{POS-Tag} & \textbf{Description}\\
+		\midrule
+		CC & Coordinating conjunction \\
+		IN & Preposition or subordinating conjunction \\
+		TO & To-prepositions \\
+		WDT & Wh-determiner \\
+		WP & Wh-pronoun \\
+		WRB & Wh-adverb \\
+		\bottomrule
+	\end{tabular}
+\end{table}

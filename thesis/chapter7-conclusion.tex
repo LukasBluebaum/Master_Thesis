@@ -1,0 +1,48 @@
+% !TEX root = my-thesis.tex
+%
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+In this thesis, we introduced a reinforcement learning approach to answer binary causal questions 
+on a causal knowledge graph. We extended the setup of many prior approaches for reasoning tasks
+via reinforcement learning on knowledge graphs~\cite{Xiong2017DeePpath, Das2018Minerva, Qiu2020Stepwise, Kaiser2021Reinforcement} by transitioning from the REINFORCE~\cite{Williams1992REINFORCE} algorithm to the A2C~\cite{Mnih2016A2C} algorithm with 
+generalized advantage estimation (GAE)~\cite{Schulman2016GAE}.
+Furthermore, we bootstrapped the agent with a supervised training procedure~\cite{Xiong2017DeePpath} to better handle 
+the large action space in CauseNet~\cite{Heindorf2020Causenet}.
+Moreover, we adapted a reward shaping technique from the literature~\cite{Yasunaga2021QAGNN} to handle sparse rewards by introducing 
+auxiliary reward signals.
+Additionally, we enhanced an existing approach from CauseNet for extracting binary causal questions.
+
+Our evaluation showed that the agent's performance does not fully match the BFS baseline, 
+indicating opportunities for improvement. 
+However, while it did not fully match the performance in terms of accuracy or $F_1$-Score, the agent exhibited advantages in other areas.
+Specifically, the agent was able to mitigate the problem of false negatives. Hence, the agent learned to avoid paths leading to false positives introduced by inverse edges and errors in CauseNet. 
+Besides, the agent effectively searches through the graph by pruning the search space by around 99\%, as demonstrated 
+in Table~\ref{table-evaluation-msmarco}.
+
+Regarding potential improvements and limitations, we observed that while the agent could mitigate the 
+problem of false positives, it did not avoid them entirely. As shown in Table~\ref{table-evaluation-msmarco}, the 
+precision decreases when increasing the path length. As a result, we will investigate possible ways to handle 
+false positives during training, as discussed in Chapter~\ref{ch:discussion}. Also, another area of improvement can be 
+the increase of the beam width, as our experiments indicated that it is still possible to do so without 
+simplifying the problem too much.  
+
+Besides, our evaluation suggested that bootstrapping via supervised learning provides a strong foundation for further improvement. 
+The agent bootstrapped with supervised learning explored significantly fewer paths while achieving higher accuracy and $F_1$-Scores than the agent trained without supervised learning.
+In contrast, the reward shaping did not have the desired effect. Even when carefully tuned, it had no impact on performance at best.
+In many cases, it decreased the performance by introducing conflicting reward signals. In future work, we will investigate and try to improve this reward shaping technique.
+
+While there are areas for improvement, for example, w.r.t. the performance in terms of accuracy and F1-Score, we successfully introduced a new approach for
+binary causal question answering.
+Our agent can be especially valuable through its ability to provide explanations when answering a question.
+Although at the moment, explanations are only possible for questions the agent answered with ``yes'', as CauseNet does not contain negative information.
+For questions answered with ``yes'', end-users receive the learned paths and can follow the reasoning chain to better understand how cause and effect are related.
+Additionally, our agent provides the original sentence from which the cause-effect pair was extracted and the URL of the source web page, allowing users to verify the claims.
+In contrast, this is not possible for a system like UnifiedQA-v2~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2}.
+
+As presented in this thesis, the first version of our agent is currently limited to binary causal questions.
+In the future, we will extend this to different causal question types, like Cause-Effect questions or multiple-choice questions, to cover a greater range 
+of potential queries. In Chapter~\ref{ch:discussion}, we introduced a simple extension for Cause-Effect questions, which only requires minimal changes to our codebase.
+Note that our agent can already answer questions like \textit{``How does pneumonia cause anemia?''} by finding a path between the cause and effect and afterward providing the original sentence and source as an explanation.
+
+Further considerations for future work include using different causal knowledge graphs, model-based reinforcement learning techniques, and runtime improvements, as discussed in Chapter~\ref{ch:discussion}.

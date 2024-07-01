@@ -1,0 +1,89 @@
+\begin{figure}
+    \centering
+    \small
+    \begin{tikzpicture}
+        %\tikzstyle{vertex}=[draw, rectangle, rounded corners, minimum width=1.8cm, minimum height=1.4cm, line width=0.8pt]
+        \tikzstyle{vertex}=[draw, rounded corners, line width=0.8pt, inner sep=4pt, minimum height = 0.7cm]
+        \tikzstyle{box}=[minimum height=0.8cm, minimum width = 6cm, inner sep=4pt, rounded corners]
+        \tikzstyle{arrow} = [->, thick,>=stealth']
+        
+        
+        %\node[draw, line width=1pt] (Corner) {};
+        \node[vertex] (N1) {bacteria};
+        \node[vertex, left = 1.3cm of N1] (myocarditis) {myocarditis};
+        \node[vertex, below = 1cm of myocarditis] (arrhythmia) {arrhythmia};
+        \node[vertex, above left = 1.02cm and 1.32cm of N1] (pericarditis) {pericarditis};
+        \node[vertex, above = 1cm of pericarditis] (pain) {pain};
+        \node[vertex, right = 1cm of N1, fill=tab20darkgreen!60] (pneumonia) {pneumonia};
+        \node[vertex, right = 1cm of pneumonia] (hospitalization) {hospitalization};
+        \node[vertex, right = 0.8cm of hospitalization] (infections) {infections};
+        \node[vertex, above = 1cm  of pneumonia, fill=tab20darkblue!60] (sepsis) {sepsis};
+        \node[vertex, above = 1cm of sepsis] (hypoglycemia) {hypoglycemia};
+        \node[vertex, left = 1.035cm of sepsis] (organ) {organ failure};
+        \node[vertex, below = 1cm of pneumonia] (ards) {ards};
+        \node[vertex, right = 1cm of ards] (death) {death};
+        \node[vertex, right = 1cm of death] (grief) {grief};
+        
+        \node[vertex, right = 1cm  of sepsis, fill=tab20darkblue!60] (kidney) {kidney failure};
+        \node[vertex, above = 1cm  of kidney] (bone) {bone pain};
+        \node[vertex, right = 1cm  of kidney, fill=tab20darkblue!60] (anemia) {anemia};
+        \node[vertex, above = 1cm  of anemia] (fatigue) {fatigue};
+        
+         \node[draw, rounded corners, line width=0.5pt, inner sep=4pt,below left = 0.8cm and -1.5cm of ards, fill=brass!60, minimum height=2cm, minimum width = 2.4cm, align=center] (LM) {Language \\ Model};
+         
+        \node[box, fill=brass!40, label=left:{}, above right = 4.1cm and -1.5cm of N1] (MCQ)  {\textbf{Question:} Can pneumonia cause anemia?};
+         
+         \node[left color=white, right color=brass!40, above left = -1.15cm and 0cm of LM, fill=brass!40, minimum height=1.1cm, minimum width = 4cm, align=center] (q1) {Can pneumonia cause ..};
+         \node[left color=white, right color=brass!40, below = 0.1cm of q1, fill=brass!40, minimum height=0.73cm, minimum width = 4cm, align=center] (q2) {Colored Path};
+         \node[left = 0.2cm of q1, fill=white, minimum height=1.1cm, minimum width = 1.5cm, align=center] (t1) {\textbf{Question:}};
+         \node[left = 0.2cm of q2, fill=white, minimum height=1.1cm, minimum width = 1.5cm, align=center] (t2) {\textbf{Context:}};
+         \node[right color=white, left color=brass!40, right = 0cm of LM, fill=brass!40, minimum height=1.4cm, minimum width = 4cm, align=center] (q3) {Yes, pneumonia can induce sepsis which ..};
+
+        
+        %\node[above left = 0.3cm and -0.4cm of pericarditis] (a) {\textbf{a)}};
+        %\node[above left = 0.2cm and -0.5cm of MCQ] (b) {\textbf{b)}};
+        %\node[below left = 0.35cm and 3.4cm of ards] (c) {\textbf{c)}};
+
+        %\node[left = 0.1cm of sepsis] (ps) {\textbf{0.7}};
+        %\node[above = 0.1cm of pneumonia] (pf) {\textbf{0.1}};
+        %\node[left = 0.1cm of ards] (pa) {\textbf{0.2}};
+        %\node[above = 0.1cm of death] (pa) {\textbf{1.0}};
+        %\node[above = 0.1cm of kidney] (ph) {\textbf{1.0}};
+        
+        \draw[arrow, line width=1.2pt] (N1) -- (myocarditis);
+        \draw[arrow, line width=1.2pt] (N1) -- (organ);
+        \draw[arrow, line width=1.2pt] (pneumonia) to node[right=0.1cm, pos=0.5]  {$\mathbf{0.6}$} (sepsis);
+        \draw[arrow, line width=1.2pt] (pneumonia)  to node[right=0.1cm, pos=0.5]  {$\mathbf{0.2}$}(ards);
+        \draw[arrow, line width=1.2pt] (pneumonia) to node[above=0.1cm, pos=0.5]  {$\mathbf{0.15}$} (hospitalization);
+        \draw[arrow, line width=1.2pt] (N1) to node[above=0.1cm, pos=0.5]  {$\mathbf{0.15}$} (pneumonia);
+        \draw[arrow, line width=1.2pt] (kidney) to node[above=0.1cm, pos=0.5]  {$\mathbf{0.8}$} (anemia);
+        \draw[arrow, line width=1.2pt] (kidney) to node[right=0.1cm, pos=0.5]  {$\mathbf{0.2}$} (bone);
+        \draw[arrow, line width=1.2pt] (anemia) -- (fatigue);
+        \draw[arrow, line width=1.2pt] (hospitalization) -- (infections);
+        \draw[arrow, line width=1.2pt] (sepsis) to node[right=0.1cm, pos=0.5]  {$\mathbf{0.1}$} (hypoglycemia);
+        \draw[arrow, line width=1.2pt] (sepsis) to node[above=0.1cm, pos=0.5]  {$\mathbf{0.2}$} (organ);
+        \draw[arrow, line width=1.2pt] (myocarditis) -- (pericarditis);
+        \draw[arrow, line width=1.2pt] (myocarditis) -- (arrhythmia);
+        \draw[arrow, line width=1.2pt] (pericarditis) -- (pain);
+        
+        \draw[arrow, line width=1.2pt] (sepsis) to node[above=0.1cm, pos=0.5]  {$\mathbf{0.7}$} (kidney);
+        \draw[arrow, line width=1.2pt] (ards) to  node[above=0.1cm, pos=0.5]  {$\mathbf{1.0}$} (death);
+        \draw[arrow, line width=1.2pt] (death) to  node[above=0.1cm, pos=0.5]  {$\mathbf{1.0}$} (grief);
+
+        \draw [draw, line width=1.2pt] (-5,5.5) -- (10,5.5);
+        \draw [draw, line width=1.2pt] (-5,4.3) -- (10,4.3);
+        \draw [draw, line width=1.2pt] (-5,-2.5) -- (10,-2.5);
+        \draw [draw, line width=1.2pt] (-5,-5.25) -- (10,-5.25);
+        %\draw[thick,rounded corners]     ($(inflammation.north west)+(-0.2,0.89)$) rectangle ($(death.south east)+(0.5,-0.3)$);
+        
+        %\draw[thick,rounded corners]     ($(ards.south west)+(-4,-0.3)$) rectangle ($(C.south east)+(0.5,-3)$);
+    \end{tikzpicture}
+    \caption{An excerpt from CauseNet~\cite{Heindorf2020Causenet} showing the entity \textit{pneumonia} together with its neighborhood containing causes and effects. 
+            Each edge depicts a \textit{cause} relation. Given the question \textit{``Can pneumonia cause anemia?''}, the search
+            starts at the entity \textit{pneumonia}. Following the path \textit{(pneumonia, sepsis, kidney failure, anemia)}, the question 
+            can be answered with ``yes''. The numbers on the edges show the probability of taking this edge under the current 
+            policy $\pi_{\theta}(a_t | s_t)$. For brevity, we only show the relevant probabilities for the given path. The lower part of the figure shows the possibility to combine our agent with a language model. In that setup, we provide the paths the agent learned for a question as additional context 
+            to the language model. We briefly explore this setup in Section~\ref{sec:evaluation-approach}.
+            }
+    \label{fig:graph_example}
+\end{figure}

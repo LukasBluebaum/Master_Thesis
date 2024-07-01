@@ -1,0 +1,115 @@
+% !TEX root = my-thesis.tex
+%
+
+\chapter{Discussion \& Future Work}
+\label{ch:discussion}
+
+Below, we discuss a few points, like the addition of inverse edges and how our approach 
+can be used to explain the answers to causal questions. Additionally, we talk 
+about possible directions for future work. These include the extension 
+to more causal question types, the usage of different causal knowledge graphs, and 
+model-based reinforcement learning techniques.
+
+\paragraph{Inverse Edges}
+For CauseNet~\cite{Heindorf2020Causenet}, the addition of inverse edges implies that the agent can also 
+walk from an effect to its cause. In general, their addition has a few benefits, 
+like the possibility to undo wrong actions and to reach nodes that otherwise could not be 
+reached under a given path length constraint. Conversely, they also introduce the possibility 
+to make mistakes through false positives, as described in Section~\ref{sec:baselines}. While these mistakes 
+will always happen for the BFS, 
+our agent can minimize them by pruning the search space, as demonstrated in our experiments in Section~\ref{sec:evaluation-approach}.
+
+Moreover, it might not always be clear that it makes sense to take an inverse edge in theory.
+For example, given a question like \textit{``Does X cause Y?''}, we start the search at $X$.
+If we take an inverse edge from an entity $Z$ to $Y$ at some point during the search, 
+it does not directly follow that $X$ causes $Y$ in theory.
+However, as our experiments show (Section~\ref{sec:ablation-study}), adding 
+inverse edges improves performance in practice, so their benefits seem to outweigh the pitfalls.
+This is in line with prior works that also added inverse edges to improve performance~\cite{Xiong2017DeePpath,Das2018Minerva}.
+
+\paragraph{Explainability of Causal Questions}
+Our approach has the advantage of not only being able to answer binary causal 
+questions but also to provide post-hoc explanations. Although, this only holds 
+for questions that were answered with ``yes'' because CauseNet~\cite{Heindorf2020Causenet} does not contain 
+negative information. If the agent found no path or the cause or effect 
+could not be found in CauseNet, we can only answer with ``no'' without additional explanation why the causal 
+relation does not hold.
+Additionally, errors in CauseNet may lead to incorrect answers and explanations. 
+However, with a precision of 96\% in CauseNet-Precision~\cite{Heindorf2020Causenet}, such scenarios are rare.
+
+As the examples in Section~\ref{sec:path-analysis} show, the paths found during 
+inference can be used to follow the complete reasoning chain. Thus, we can inspect 
+the paths to examine the specific mechanisms by which the cause produces the effect, potentially through a chain 
+of multiple entities. Moreover, since the agent might find multiple paths between a cause and effect 
+pair, we can showcase multiple ways in which the cause and effect are related.
+
+Finally, we can use the additional meta-information that is part of each relation~\cite{Heindorf2020Causenet}.
+For example, we can reference the original sentence from which the relation was extracted, which may provide additional insights. 
+Furthermore, each relation contains the URL of the original web source, which we can check to verify the causal relations and receive further information.
+In general, this is not possible with a language model like UnifiedQA~\cite{Khashabi2020UnifiedQA, Khashabi2022UnifiedQA2}. For example, for binary causal questions, 
+it provides a ``yes'' or ``no'' answer, possibly with an explanation, but with no direct way to verify this claim.
+Although, research is ongoing to enhance language models with the 
+ability to cite their sources~\cite{Menick2022Cite}.
+
+
+\paragraph{Additional Causal Question Types}
+At the moment, our approach only supports binary causal questions. In the following, 
+we discuss a straightforward extension to Cause-Effect question. In Section~\ref{subsec:causal-questions}, we defined
+ Cause-Effect questions as questions like \textit{``What causes pneumonia?''}, i.e., questions that ask for the 
+ cause of a given effect or vice versa. These questions only require changes at inference time and no changes at 
+ train time.\footnote{During training, one minor difference is that we do not take the cause and effect from the question, but rather one from the question and the other from the answer.}
+
+Contrary to binary causal questions, we no longer have to verify a given causal relation but search for a suitable entity.
+Therefore, we need to change the decoding at inference time since we no longer know the entity we are looking for.
+Thus, we introduce a majority voting approach. Given a question like \textit{``What causes pneumonia?''}, 
+we still sample multiple paths from the agent. Next, we count the occurrence of the entities on these 
+paths and select the one with the highest count as the answer. Alternatively, we can 
+conduct the ranking by summing their probabilities on different paths. Moreover, we can also provide 
+multiple answers by selecting the top n candidates.
+Overall, this approach only requires minor changes to our current code base.
+To answer more complex questions like \textit{``How does smoking cause cancer?''}, we can 
+run the agent to answer the question as if it were a binary question and then use one of the possibilities for explanations described above.
+
+
+\paragraph{Causal Knowledge Graphs}
+Our approach is inherently limited by CauseNet.
+If a question requires information not present in CauseNet, our agent cannot provide an answer.
+A simple extension would be the introduction of additional graphs 
+like Cause Effect Graph~\cite{Li2020CauseEffectGraph}. Cause Effect Graph is another 
+large-scale causal knowledge graph that is very similar to CauseNet's structure.
+Subsequently, we can apply the agent on each 
+graph and answer with ``yes'' if one of them yields a result. Conversely, if we want to optimize for 
+precision, we would require both to yield a result.
+
+Another possible extension is the introduction of graphs like ATOMIC~\cite{Sap2019ATOMIC}.
+CauseNet contains causal relations between concepts like cancer, smoking, pneumonia, or anemia.
+In contrast, ATOMIC contains relations about commonsense reasoning in everyday life.
+These relations are presented in the form of ``If-Event-Then-X'' patterns. For example, social interactions like 
+if ``Person X makes Person Y a compliment'', then ``Person Y will feel good''~\cite{Sap2019ATOMIC}.
+These different knowledge types can complement each other and allow the agent to answer a 
+greater variety of causal questions. 
+
+
+\paragraph{False Positives \& Negative Causal Questions}
+In future work, we plan to investigate different ways to handle false positives during training and incorporate negative causal questions.
+As discussed, inverse edges and errors in CauseNet can introduce false positives.
+Currently, during training, these errors are treated as any other error, resulting in a reward of 0. 
+However, it could be argued that these types of errors should be treated differently, such as by assigning a negative reward.
+To incentivize the agent to ignore errors in CauseNet and only to take inverse edges when appropriate.
+Additionally, we will explore mechanisms for incorporating negative causal questions into training.
+In the current setup, we excluded them because CauseNet does not contain negative information~\cite{Heindorf2020Causenet}.
+
+\paragraph{Model-Based Reinforcement Learning}
+As discussed above, the transition function of the MDP is known and deterministic because it is entirely defined by the static graph~\cite{Shen2018MWalk}.
+Thus, M-Walk~\cite{Shen2018MWalk} used a model-based reinforcement learning algorithm similar to AlphaGo Zero~\cite{Silver2017AlphaGoZero}.
+A possible improvement could be to use MuZero~\cite{Schrittwieser2020Muzero}, a successor of AlphaGo Zero.
+Particularly interesting might be Sampled MuZero~\cite{Hubert2021Sampled}, an extension to MuZero designed to deal 
+with large and complex action spaces.
+
+
+\paragraph{Runtime Improvements}
+In future works, we will add parallelization to our framework to decrease the training time.
+Typical A2C implementations use multiple workers in parallel to sample episodes. However, in our current 
+implementation, we only use one worker. To improve the inference time, we can improve our beam 
+search implementation regarding the usage of batches and memory movements between CPU and GPU.
+Furthermore, we can apply improvements like switching from eager mode to graph mode in PyTorch.

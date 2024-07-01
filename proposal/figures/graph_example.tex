@@ -1,0 +1,56 @@
+\begin{figure}
+    \centering
+    \small
+    \begin{tikzpicture}
+        %\tikzstyle{vertex}=[draw, rectangle, rounded corners, minimum width=1.8cm, minimum height=1.4cm, line width=0.8pt]
+        \tikzstyle{vertex}=[draw, rounded corners, line width=0.8pt, inner sep=4pt, minimum height = 0.7cm]
+        \tikzstyle{box}=[minimum height=0.8cm, minimum width = 6cm, inner sep=4pt, rounded corners]
+        \tikzstyle{arrow} = [->, thick,>=stealth']
+        
+        
+        \node[vertex, , fill=tab20darkgreen!60] (N1) {pneumonia};
+        %\node[vertex, left = 3cm of MCQ] (N1) {pneumonia};
+        \node[vertex, left = 1.3cm of N1, fill=tab20darkblue!60] (bacteria) {bacteria};
+        \node[vertex, above left = 1cm and 1cm of N1] (inflammation) {inflammation};
+        \node[vertex, right = 1.5cm of N1] (fevers) {fevers};
+        \node[vertex, above = 1cm  of N1, fill=tab20darkblue!60] (sepsis) {sepsis};
+        \node[vertex, below = 1cm of N1, fill=tab20darkblue!60] (ards) {ARDS};
+        \node[vertex, right = 2.05cm of ards, fill=tab20darkblue!60] (death) {death};
+        
+        \node[vertex, right = 1cm  of sepsis, fill=tab20darkblue!60] (hypoglycemia) {hypoglycemia};
+        
+         \node[draw, rounded corners, line width=0.5pt, inner sep=4pt,below left = 0.75cm and -1.5cm of death, fill=brass!60, minimum height=2cm, minimum width = 2.4cm, align=center] (LM) {Language \\ Model};
+         
+         
+         
+         \node[left color=white, right color=brass!40, above left = -1.15cm and 0cm of LM, fill=brass!40, minimum height=1.1cm, minimum width = 4cm, align=center] (q1) {How does pneumonia ..};
+         \node[left color=white, right color=brass!40, below = 0.1cm of q1, fill=brass!40, minimum height=0.73cm, minimum width = 4cm, align=center] (q2) {Path (P3)};
+         \node[left = 0.2cm of q1, fill=white, minimum height=1.1cm, minimum width = 1.5cm, align=center] (t1) {\textbf{Question:}};
+         \node[left = 0.2cm of q2, fill=white, minimum height=1.1cm, minimum width = 1.5cm, align=center] (t2) {\textbf{Context:}};
+         \node[right color=white, left color=brass!40, right = 0cm of LM, fill=brass!40, minimum height=1.4cm, minimum width = 4cm, align=center] (q3) {Pneumonia can induce ARDS which ..};
+
+        \node[box, fill=brass!40, label=above:{\textbf{(1) Binary Question}}, above right = 1cm and 3.4cm of N1] (MCQ)  {Does pneumonia cause hypoglycemia?};
+        \node[box, below = of MCQ, fill=brass!40, label=above:{\textbf{(2) Cause/Effect Question}}] (CQ)  {What causes pneumonia?};
+        \node[box, below = of CQ, fill=brass!40, label=above:{\textbf{(3) Complex Question}}] (C)  {How does pneumonia cause death?};
+        
+        \node[above left = 0.3cm and -0.4cm of inflammation] (a) {\textbf{a)}};
+        \node[above left = 0.2cm and -0.5cm of MCQ] (b) {\textbf{b)}};
+        \node[below left = 0.35cm and 3.4cm of ards] (c) {\textbf{c)}};
+        
+        \draw[arrow, line width=1.2pt] (bacteria) to  node[below=0.1cm, pos=0.5]  {\textbf{(P2)}} (N1);
+        \draw[arrow, line width=1.2pt] (N1) to  node[right=0.1cm, pos=0.5]  {\textbf{(P1)}} (sepsis);
+        \draw[arrow, line width=1.2pt] (N1) to  node[right=0.1cm, pos=0.5]  {\textbf{(P3)}} (ards);
+        \draw[arrow] (N1) -- (fevers);
+        \draw[arrow] (N1) -- (inflammation);
+        
+        \draw[arrow, line width=1.2pt] (sepsis) to  node[above=0.1cm, pos=0.5]  {\textbf{(P1)}} (hypoglycemia);
+        \draw[arrow, line width=1.2pt] (ards) to  node[below=0.1cm, pos=0.5]  {\textbf{(P3)}} (death);
+
+        \draw[thick,rounded corners]     ($(inflammation.north west)+(-0.2,0.89)$) rectangle ($(death.south east)+(0.5,-0.3)$);
+        \draw[thick,rounded corners]     ($(MCQ.north west)+(-0.1,0.8)$) rectangle ($(C.south east)+(0.5,-0.13)$);
+        
+        \draw[thick,rounded corners]     ($(ards.south west)+(-4,-0.3)$) rectangle ($(C.south east)+(0.5,-3)$);
+    \end{tikzpicture}
+    \caption{A snapshot from CauseNet \textbf{a)} together with concrete examples for each question type \textbf{b)}. The annotated paths in the graph correspond to possible answers for each question, respectively. Note how question 3) asks for an explanation of a causal relation. In this case, that pneumonia causes death by inducing acute respiratory distress syndrome (ARDS). For this question type, we take the path(s) found by the agent and feed them into a language model as additional context \textbf{c)}.}
+    \label{fig:graph_example}
+\end{figure}
